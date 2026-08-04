@@ -14,6 +14,7 @@ from qm_tool import compute_qm_potential_well
 from nuclear_decay_tool import compute_nuclear_decay_chain
 from fractal_dimension_tool import compute_fractal_dimension
 from ethnomath_tool import compute_ethnomath
+from ethnomath2_tool import compute_ethnomath2
 
 mcp = FastMCP(name="octave-mcp", instructions="Servidor MCP GNU Octave.")
 
@@ -248,5 +249,12 @@ def ethnomath(preset: str, params: dict = None) -> dict:
     """Algoritmos matematicos historicos: maya_long_count, chinese_remainder,
     vedic_multiply, quipu_encode, greek_archimedes_pi, japanese_enri_pi."""
     return compute_ethnomath(preset, params or {})
+
+@mcp.tool()
+def ethnomath2(preset: str, params: dict = None) -> dict:
+    """Segunda tanda de algoritmos matematicos historicos: egyptian_duplation,
+    persian_khwarizmi, persian_alkashi_sin1, russian_peasant,
+    ottoman_taqi_al_din, norse_rune_calendar, southeast_asian_metonic."""
+    return compute_ethnomath2(preset, params or {})
 if __name__ == "__main__":
     mcp.run()
