@@ -14,6 +14,8 @@ from qm_tool import compute_qm_potential_well
 from nuclear_decay_tool import compute_nuclear_decay_chain
 from fractal_dimension_tool import compute_fractal_dimension
 from cross_validation_tool import compute_cross_validation
+from entropy_structure_tool import compute_entropy_structure
+from music_math_tool import compute_music_math
 from ethnomath_tool import compute_ethnomath
 from ethnomath2_tool import compute_ethnomath2
 from ancient_calculators_tool import compute_ancient_calculator
@@ -309,5 +311,23 @@ def cross_validation(system: str = "chen_lee", params: dict = None, t_max: float
     RK45). Devuelve ambas dimensiones, la diferencia relativa, y un flag
     cross_validated. Sistemas disponibles: chen_lee."""
     return compute_cross_validation(system, params or {}, t_max, n_steps, transient_frac, tolerance)
+
+@mcp.tool()
+def entropy_structure(preset: str = "random_iid", sequence: list = None,
+                       alphabet_size: int = 5, n_symbols: int = 5000, seed: int = 1) -> dict:
+    """Calcula entropia de orden 0 y entropia condicional de orden 1 sobre una
+    secuencia de simbolos, para evaluar evidencia de estructura combinatoria
+    (compatible con codificacion tipo-lenguaje) vs. conteo simple/tally marks.
+    Presets sinteticos validados (random_iid, markov_structured) o custom via
+    'sequence' con datos reales (khipu, yupana, corpus sin descifrar, etc)."""
+    return compute_entropy_structure(preset, sequence, alphabet_size, n_symbols, seed)
+
+@mcp.tool()
+def music_math(preset: str = "pythagorean_comma", f0: float = 220.0, n_harmonics: int = 8,
+                n_power: int = 2, signal: list = None, fs: float = 44100) -> dict:
+    """Calculos de matematica musical: pythagorean_comma, temperament_comparison,
+    harmonic_series, ternary_scale (division de la octava en 3^n pasos, conexion
+    con TritOS), spectral_analysis (FFT real via Octave sobre una senal)."""
+    return compute_music_math(preset, f0, n_harmonics, n_power, signal, fs)
 if __name__ == "__main__":
     mcp.run()
