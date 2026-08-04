@@ -17,6 +17,7 @@ from ethnomath_tool import compute_ethnomath
 from ethnomath2_tool import compute_ethnomath2
 from ancient_calculators_tool import compute_ancient_calculator
 from levant_tool import compute_levant
+from originarios_tool import compute_originarios
 from ancestral_octave_tool import compute_ancestral_octave
 
 mcp = FastMCP(name="octave-mcp", instructions="Servidor MCP GNU Octave.")
@@ -291,5 +292,12 @@ def levant(preset: str, params: dict = None) -> dict:
     palabras hebreas y su inverso), canaanite_phoenician_numeral (sistema
     aditivo 1/10/20/100)."""
     return compute_levant(preset, params or {})
+
+@mcp.tool()
+def originarios(preset: str, params: dict = None) -> dict:
+    """Numeracion de pueblos originarios: mapuche_numeral (rakin, decimal
+    aditivo-multiplicativo) y aymara_numeral (decimal con sufijo -ni, mas
+    nota sobre vestigio quinario)."""
+    return compute_originarios(preset, params or {})
 if __name__ == "__main__":
     mcp.run()
