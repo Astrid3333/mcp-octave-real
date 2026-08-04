@@ -1,0 +1,57 @@
+#!/usr/bin/env python3
+import subprocess, tempfile, os
+from pathlib import Path
+from fastmcp import FastMCP
+
+mcp = FastMCP(name="octave-mcp", instructions="Servidor MCP GNU Octave.")
+OCTAVE_TIMEOUT = 60
+
+def _run_octave(code, working_dir=None):
+    with tempfile.NamedTemporaryFile(mode="w", suffix=".m", delete=False, dir=working_dir) as f:
+        f.write(code)
+        script_path = f.name
+    try:
+        r = subprocess.run(["octave","--no-gui","--no-init-file",script_path],
+            capture_output=True, text=True, timeout=OCTAVE_TIMEOUT,
+            cwd=working_dir or os.path.expanduser("~"))
+        return {"stdout": r.stdout.strip(), "stderr": r.stderr.strip(), "returncode": r.returncode}
+    except subprocess.TimeoutExpired:
+        return {"stdout":"","stderr":"Timeout","returncode":-1}
+    except FileNotFoundError:
+        return {"stdout":"","stderr":"octave no encontrado","returncode":-2}
+    finally:
+        os.unlink(script_path)
+
+@mcp.tool()
+def octave_run(code: str) -> str:
+    r = _run_octave(code)
+    parts = []
+    if r["stdout"]: parts.append(r["stdout"])
+    if r["stderr"]: parts.append("[stderr]\n" + r["stderr"])
+    return "\n".join(parts) if parts else "(sin salida)"
+
+@mcp.tool()
+def octave_eval_expr(expression: str) -> str:
+    r = _run_octave("disp(" + expression + ")")
+    return r["stdout"] if r["returncode"] == 0 else r["stderr"]
+
+@mcp.tool()
+def octave_run_script(script_path: str) -> str:
+    p = Path(script_path)
+    if not p.exists(): return "Error: no existe " + script_path
+    r = _run_octave(p.read_text(), working_dir=str(p.parent))
+    parts = []
+    if r["stdout"]: parts.append(r["stdout"])
+    if r["stderr"]: parts.append("[stderr]\n" + r["stderr"])
+    return "\n".join(parts) if parts else "(sin salida)"
+
+@mcp.tool()
+def octave_version() -> str:
+    try:
+        r = subprocess.run(["octave","--version"], capture_output=True, text=True, timeout=10)
+        return r.stdout.strip()
+    except FileNotFoundError:
+        return "Octave no encontrado"
+
+if __name__ == "__main__":
+    mcp.run()
