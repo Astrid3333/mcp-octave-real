@@ -11,6 +11,9 @@ from bifurcation_tool import compute_bifurcation_diagram
 from hilbert_tool import compute_hilbert_transform
 from graph_tool import compute_graph_algorithms
 from qm_tool import compute_qm_potential_well
+from nuclear_decay_tool import compute_nuclear_decay_chain
+from fractal_dimension_tool import compute_fractal_dimension
+from ethnomath_tool import compute_ethnomath
 
 mcp = FastMCP(name="octave-mcp", instructions="Servidor MCP GNU Octave.")
 
@@ -204,5 +207,46 @@ def qm_potential_well(
         x_range=x_range, n_points=n_points, mass=mass, hbar=hbar, n_states=n_states,
     )
 
+
+@mcp.tool()
+def nuclear_decay_chain(
+    preset: str = "cs137_ba137m",
+    chain: list = None,
+    t_max: float = None,
+    n_points: int = 300,
+    stable_last: bool = True,
+) -> dict:
+    """Resuelve una cadena de decaimiento nuclear (Bateman) via ode45.
+    Presets: cs137_ba137m, sr90_y90, o custom via 'chain'. stable_last=True
+    no sigue la cadena mas alla del ultimo isotopo pero NUNCA anula su
+    lambda (permite alcanzar equilibrio secular)."""
+    return compute_nuclear_decay_chain(preset, chain, t_max, n_points, stable_last)
+
+
+@mcp.tool()
+def fractal_dimension(
+    preset: str = "sierpinski_triangle",
+    points: list = None,
+    n_points: int = 60000,
+    order: int = 6,
+    n_scales: int = 14,
+    eps_min_frac: float = 0.001,
+    eps_max_frac: float = 0.3,
+    chen_lee_params: dict = None,
+) -> dict:
+    """Dimension fractal por box-counting. Presets: sierpinski_triangle,
+    koch_curve, cantor_set (con dimension analitica de referencia),
+    chen_lee_attractor (integra el sistema caotico en Octave), o custom
+    via 'points'."""
+    return compute_fractal_dimension(preset, points, n_points, order,
+                                      n_scales, eps_min_frac, eps_max_frac,
+                                      chen_lee_params)
+
+
+@mcp.tool()
+def ethnomath(preset: str, params: dict = None) -> dict:
+    """Algoritmos matematicos historicos: maya_long_count, chinese_remainder,
+    vedic_multiply, quipu_encode, greek_archimedes_pi, japanese_enri_pi."""
+    return compute_ethnomath(preset, params or {})
 if __name__ == "__main__":
     mcp.run()
