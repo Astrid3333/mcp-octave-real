@@ -16,6 +16,7 @@ from fractal_dimension_tool import compute_fractal_dimension
 from ethnomath_tool import compute_ethnomath
 from ethnomath2_tool import compute_ethnomath2
 from ancient_calculators_tool import compute_ancient_calculator
+from levant_tool import compute_levant
 from ancestral_octave_tool import compute_ancestral_octave
 
 mcp = FastMCP(name="octave-mcp", instructions="Servidor MCP GNU Octave.")
@@ -282,5 +283,13 @@ def math_philosophy_history(topic: str = "", params: dict = None) -> str:
     return compute_math_philosophy_history(topic, params)
 
 
+
+@mcp.tool()
+def levant(preset: str, params: dict = None) -> dict:
+    """Matematica cananea y de Juda/Israel: hebrew_molad (conjuncion lunar
+    media, ciclo metonico de 19 anios), hebrew_gematria (valor numerico de
+    palabras hebreas y su inverso), canaanite_phoenician_numeral (sistema
+    aditivo 1/10/20/100)."""
+    return compute_levant(preset, params or {})
 if __name__ == "__main__":
     mcp.run()
