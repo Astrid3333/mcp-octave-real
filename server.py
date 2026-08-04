@@ -13,6 +13,7 @@ from graph_tool import compute_graph_algorithms
 from qm_tool import compute_qm_potential_well
 from nuclear_decay_tool import compute_nuclear_decay_chain
 from fractal_dimension_tool import compute_fractal_dimension
+from cross_validation_tool import compute_cross_validation
 from ethnomath_tool import compute_ethnomath
 from ethnomath2_tool import compute_ethnomath2
 from ancient_calculators_tool import compute_ancient_calculator
@@ -299,5 +300,14 @@ def originarios(preset: str, params: dict = None) -> dict:
     aditivo-multiplicativo) y aymara_numeral (decimal con sufijo -ni, mas
     nota sobre vestigio quinario)."""
     return compute_originarios(preset, params or {})
+
+@mcp.tool()
+def cross_validation(system: str = "chen_lee", params: dict = None, t_max: float = 2000,
+                      n_steps: int = 200000, transient_frac: float = 0.1, tolerance: float = 0.15) -> dict:
+    """Valida un resultado de dimension fractal corriendo el mismo sistema
+    dinamico con dos motores numericos independientes (Octave ode45 y scipy
+    RK45). Devuelve ambas dimensiones, la diferencia relativa, y un flag
+    cross_validated. Sistemas disponibles: chen_lee."""
+    return compute_cross_validation(system, params or {}, t_max, n_steps, transient_frac, tolerance)
 if __name__ == "__main__":
     mcp.run()
