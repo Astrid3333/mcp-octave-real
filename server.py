@@ -16,6 +16,7 @@ from fractal_dimension_tool import compute_fractal_dimension
 from cross_validation_tool import compute_cross_validation
 from entropy_structure_tool import compute_entropy_structure
 from music_math_tool import compute_music_math
+from linear_algebra_tool import compute_linear_algebra
 from ethnomath_tool import compute_ethnomath
 from ethnomath2_tool import compute_ethnomath2
 from ancient_calculators_tool import compute_ancient_calculator
@@ -329,5 +330,14 @@ def music_math(preset: str = "pythagorean_comma", f0: float = 220.0, n_harmonics
     harmonic_series, ternary_scale (division de la octava en 3^n pasos, conexion
     con TritOS), spectral_analysis (FFT real via Octave sobre una senal)."""
     return compute_music_math(preset, f0, n_harmonics, n_power, signal, fs)
+
+@mcp.tool()
+def linear_algebra(mode: str = "eigen", preset: str = "known_symmetric",
+                    matrix: list = None, data: list = None) -> dict:
+    """Algebra lineal via Octave: eigen (autovalores/autovectores), svd
+    (descomposicion en valores singulares + verificacion), pca (componentes
+    principales, varianza explicada), matrix_analysis (rango, condicion,
+    determinante, inversa). Prerrequisito de persistent_homology_tool."""
+    return compute_linear_algebra(mode, preset, matrix, data)
 if __name__ == "__main__":
     mcp.run()
