@@ -17,6 +17,7 @@ from cross_validation_tool import compute_cross_validation
 from entropy_structure_tool import compute_entropy_structure
 from music_math_tool import compute_music_math
 from linear_algebra_tool import compute_linear_algebra
+from persistent_homology_tool import compute_persistent_homology
 from ethnomath_tool import compute_ethnomath
 from ethnomath2_tool import compute_ethnomath2
 from ancient_calculators_tool import compute_ancient_calculator
@@ -339,5 +340,16 @@ def linear_algebra(mode: str = "eigen", preset: str = "known_symmetric",
     principales, varianza explicada), matrix_analysis (rango, condicion,
     determinante, inversa). Prerrequisito de persistent_homology_tool."""
     return compute_linear_algebra(mode, preset, matrix, data)
+
+@mcp.tool()
+def persistent_homology(preset: str = "circle", points: list = None,
+                         max_edge_length: float = None, max_dim: int = 2,
+                         n_points: int = 20, seed: int = 1) -> dict:
+    """Homologia persistente (H0, H1) sobre una nube de puntos via complejo
+    de Vietoris-Rips y reduccion de matriz de borde. Presets sinteticos
+    validados (circle, two_clusters, random_noise) o custom via 'points'
+    para datos reales -- por ejemplo nubes reconstruidas de un embedding
+    de Takens (conexion directa con TritOS)."""
+    return compute_persistent_homology(preset, points, max_edge_length, max_dim, n_points, seed)
 if __name__ == "__main__":
     mcp.run()
