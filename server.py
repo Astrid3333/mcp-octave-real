@@ -15,6 +15,8 @@ from nuclear_decay_tool import compute_nuclear_decay_chain
 from fractal_dimension_tool import compute_fractal_dimension
 from ethnomath_tool import compute_ethnomath
 from ethnomath2_tool import compute_ethnomath2
+from ancient_calculators_tool import compute_ancient_calculator
+from ancestral_octave_tool import compute_ancestral_octave
 
 mcp = FastMCP(name="octave-mcp", instructions="Servidor MCP GNU Octave.")
 
@@ -256,5 +258,29 @@ def ethnomath2(preset: str, params: dict = None) -> dict:
     persian_khwarizmi, persian_alkashi_sin1, russian_peasant,
     ottoman_taqi_al_din, norse_rune_calendar, southeast_asian_metonic."""
     return compute_ethnomath2(preset, params or {})
+
+@mcp.tool()
+def ancient_calculator(preset: str, params: dict = None) -> dict:
+    """Simula calculadoras historicas reales operando sus cuentas/fichas:
+    suanpan, soroban, roman_hand_abacus, yupana_depasquale (hipotesis en
+    disputa academica, ver advertencia en la respuesta)."""
+    return compute_ancient_calculator(preset, params or {})
+
+@mcp.tool()
+def ancestral_octave(preset: str, params: dict = None, extra_octave: str = None) -> dict:
+    """Corre metodos ancestrales (suanpan_add, chinese_remainder, vedic_multiply,
+    archimedes_pi, quipu_encode) como funciones Octave NATIVAS via ancestral.m,
+    en el mismo motor que octave_run. extra_octave permite componer con otro
+    codigo Octave en la misma sesion."""
+    return compute_ancestral_octave(preset, params or {}, extra_octave, _run_octave)
+
+from filosofia_historia_mate_tool import compute_math_philosophy_history
+
+@mcp.tool()
+def math_philosophy_history(topic: str = "", params: dict = None) -> str:
+    """Referencia sobre filosofia e historia de la matematica (8 topics)."""
+    return compute_math_philosophy_history(topic, params)
+
+
 if __name__ == "__main__":
     mcp.run()
