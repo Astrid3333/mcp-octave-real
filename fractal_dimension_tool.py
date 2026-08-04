@@ -37,7 +37,7 @@ FRACTAL_DIM_SCHEMA = {
             "n_scales": {"type": "integer", "default": 14},
             "eps_min_frac": {"type": "number", "default": 0.001},
             "eps_max_frac": {"type": "number", "default": 0.3},
-            "chen_lee_params": {"type": "object", "description": "{'a':5,'b':-10,'c':-0.38} por defecto"},
+            "chen_lee_params": {"type": "object", "description": "{'a':5,'b':-10,'c':-3.8} por defecto"},
         },
     },
 }
@@ -52,7 +52,6 @@ def _box_counting_dimension(points, n_scales=14, eps_min_frac=0.001, eps_max_fra
     eps_max = eps_max_frac * span
     ratio = (eps_max / eps_min) ** (1.0 / (n_scales - 1))
     eps_list = [eps_min * (ratio ** i) for i in range(n_scales)]
-
     table = []
     for eps in eps_list:
         occupied = set()
@@ -61,8 +60,14 @@ def _box_counting_dimension(points, n_scales=14, eps_min_frac=0.001, eps_max_fra
             occupied.add(key)
         table.append({"eps": eps, "n_boxes": len(occupied)})
 
-    xs = [math.log(1.0 / t["eps"]) for t in table]
-    ys = [math.log(t["n_boxes"]) for t in table]
+    n_points_total = len(points)
+    usable = [t for t in table
+              if t["n_boxes"] >= 20
+              and t["n_boxes"] <= 0.3 * n_points_total]
+    fit_table = usable if len(usable) >= 4 else table
+
+    xs = [math.log(1.0 / t["eps"]) for t in fit_table]
+    ys = [math.log(t["n_boxes"]) for t in fit_table]
     n = len(xs)
     mx = sum(xs) / n
     my = sum(ys) / n
@@ -70,7 +75,6 @@ def _box_counting_dimension(points, n_scales=14, eps_min_frac=0.001, eps_max_fra
     den = sum((xs[i] - mx) ** 2 for i in range(n))
     slope = num / den if den != 0 else float("nan")
     return slope, table
-
 
 def _gen_sierpinski(n_points, seed=42):
     rng = random.Random(seed)
@@ -121,12 +125,16 @@ def _gen_chen_lee_attractor(params, timeout=60):
     a = params.get("a", 5.0)
     b = params.get("b", -10.0)
     c = params.get("c", -0.38)
+    t_max = params.get("t_max", 200)
+    n_steps = params.get("n_steps", 20000)
+    transient_frac = params.get("transient_frac", 0.1)
+    transient_idx = max(1, int(n_steps * transient_frac))
     octave_code = f"""
 a = {a}; b = {b}; c = {c};
 f = @(t, s) [a*s(1) - s(2)*s(3); b*s(2) + s(1)*s(3); c*s(3) + s(1)*s(2)/3];
-tspan = linspace(0, 200, 20000);
+tspan = linspace(0, {t_max}, {n_steps});
 [t, S] = ode45(f, tspan, [1; 1; 1]);
-S = S(2000:end, :);  % descarta transiente
+S = S({transient_idx}:end, :);  % descarta transiente
 printf("%.8e ", S');
 """
     with tempfile.NamedTemporaryFile(mode="w", suffix=".m", delete=False) as fh:
@@ -142,7 +150,6 @@ printf("%.8e ", S');
     vals = [float(x) for x in r.stdout.split()]
     pts = [(vals[i], vals[i + 1], vals[i + 2]) for i in range(0, len(vals), 3)]
     return pts, None
-
 
 def compute_fractal_dimension(preset="sierpinski_triangle", points=None, n_points=60000,
                                order=6, n_scales=14, eps_min_frac=0.001, eps_max_frac=0.3,
