@@ -19,6 +19,7 @@ from music_math_tool import compute_music_math
 from linear_algebra_tool import compute_linear_algebra
 from persistent_homology_tool import compute_persistent_homology
 from statistics_tool import compute_statistics
+from number_theory_tool import compute_number_theory
 from ethnomath_tool import compute_ethnomath
 from ethnomath2_tool import compute_ethnomath2
 from ancient_calculators_tool import compute_ancient_calculator
@@ -362,5 +363,18 @@ def statistics(mode: str = "linear_regression", preset: str = "known_linear",
     p-value via betainc), bayesian_beta_binomial (actualizacion conjugada
     Beta-Binomial). Pensado para analisis de riesgo (QGIS)."""
     return compute_statistics(mode, preset, x, y, sample, mu0, prior_a, prior_b, successes, trials)
+
+@mcp.tool()
+def number_theory(mode: str = "primality_test", preset: str = "known_cases", n: int = None,
+                   p: int = None, q: int = None, e: int = 17, message: int = None,
+                   curve_a: int = None, curve_b: int = None, curve_p: int = None,
+                   point1: list = None, point2: list = None) -> dict:
+    """Teoria de numeros con aplicacion criptografica: primality_test
+    (Miller-Rabin, detecta numeros de Carmichael), rsa_toy (genera par de
+    claves, cifra/descifra, valida contra ejemplo clasico del paper RSA),
+    elliptic_curve_add (suma/duplicacion de puntos, validado contra
+    Hankerson et al). Conecta con chinese_remainder via RSA-CRT."""
+    return compute_number_theory(mode, preset, n, p, q, e, message,
+                                   curve_a, curve_b, curve_p, point1, point2)
 if __name__ == "__main__":
     mcp.run()
