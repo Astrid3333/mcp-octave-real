@@ -472,12 +472,14 @@ def historian(mode: str = "validate", analysis_type: str = "inflation", text_dat
     regex (sin NLP complejo), arma arrays de numpy, y ajusta el motor
     correspondiente segun analysis_type -- inflation/demographics (regresion
     log-lineal: tasa anual %, R2), trade_network (centralidad de red:
-    fuerza entrante + autovector, identifica el hub), o units_entropy
-    (entropia de Shannon sobre unidades historicas de medida sacadas del
-    texto -- capacidad/longitud/peso -- indice de homogeneidad 0-100%).
-    Con pocos datos extraidos, escala en vez de adivinar. Modes: analyze
-    (requiere text_data o preset), validate (corre 4 casos sinteticos con
-    verdad conocida)."""
+    fuerza entrante + autovector, identifica el hub), units_entropy
+    (entropia de Shannon sobre unidades historicas de medida -- indice de
+    homogeneidad 0-100%), o benford (test de bondad de ajuste chi2 contra
+    la distribucion de Benford sobre primeros digitos -- detecta cifras
+    redondeadas/inventadas en padrones tributarios). Con pocos datos
+    extraidos, escala en vez de adivinar. Modes: analyze (requiere
+    text_data o preset), validate (corre 6 casos sinteticos con verdad
+    conocida)."""
     return compute_historian(mode, analysis_type, text_data, preset)
 
 @mcp.tool()

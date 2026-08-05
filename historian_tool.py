@@ -237,11 +237,64 @@ def _analizar_units_entropy(text_data, min_mentions=3):
     return resultado
 
 
+import math
+from collections import Counter
+from scipy import stats as _stats
+
+_BENFORD_ESPERADO = {d: math.log10(1 + 1 / d) for d in range(1, 10)}
+
+
+def _primeros_digitos(text_data):
+    numeros = re.findall(r"\d+(?:[.,]\d+)?", text_data)
+    digitos = []
+    for n in numeros:
+        n_limpio = n.replace(",", ".").lstrip("0")
+        if not n_limpio or n_limpio[0] == ".":
+            continue
+        if n_limpio[0].isdigit() and n_limpio[0] != "0":
+            digitos.append(int(n_limpio[0]))
+    return digitos
+
+
+def _analizar_benford(text_data, min_muestras=30):
+    digitos = _primeros_digitos(text_data)
+    n = len(digitos)
+    if n < min_muestras:
+        return {"escalado": True, "razon": f"solo {n} numeros extraidos, minimo {min_muestras}"}
+    conteo = Counter(digitos)
+    observado = np.array([conteo.get(d, 0) for d in range(1, 10)], dtype=float)
+    esperado_frac = np.array([_BENFORD_ESPERADO[d] for d in range(1, 10)])
+    esperado = esperado_frac * n
+    chi2, p_valor = _stats.chisquare(observado, esperado)
+    return {
+        "escalado": False,
+        "n_muestras": n,
+        "distribucion_observada_pct": {str(d): round(100 * observado[d-1] / n, 2) for d in range(1, 10)},
+        "distribucion_benford_esperada_pct": {str(d): round(100 * esperado_frac[d-1], 2) for d in range(1, 10)},
+        "chi2": float(chi2),
+        "p_valor": float(p_valor),
+        "desviacion_significativa": bool(p_valor < 0.05),
+    }
+
+
+def _preset_benford_natural():
+    valores = [round(10 ** (i / 50), 2) for i in range(150)]
+    partes = [f"El padron registro {v} quintales de tributo." for v in valores]
+    return " ".join(partes), {"benford_esperado": True}
+
+
+def _preset_benford_inventado():
+    valores = [500] * 20 + [50] * 15 + [5000] * 15 + [55] * 10
+    partes = [f"El padron registro {v} quintales de tributo." for v in valores]
+    return " ".join(partes), {"benford_esperado": False}
+
+
 _ANALIZADORES = {
     "inflation": _analizar_inflation,
     "demographics": _analizar_demographics,
     "trade_network": _analizar_trade_network,
     "units_entropy": _analizar_units_entropy,
+    "benford": _analizar_benford,
 }
 
 
@@ -294,6 +347,12 @@ def _preset_texto(preset):
             "homogeneidad_esperada_pct": 100.0,
         }
 
+    if preset == "benford_natural_demo":
+        return _preset_benford_natural()
+
+    if preset == "benford_inventado_demo":
+        return _preset_benford_inventado()
+
     raise ValueError(f"preset desconocido: {preset!r}")
 
 
@@ -333,7 +392,17 @@ def _validar():
     )
     resultados["units_entropy"] = {"ok": ok_entropy, "homogeneidad_recuperada_pct": r.get("homogeneidad_pct"), "homogeneidad_esperada_pct": verdad["homogeneidad_esperada_pct"]}
 
-    resultados["todos_correctos"] = ok_inflation and ok_demo and ok_trade and ok_entropy
+    texto, verdad = _preset_texto("benford_natural_demo")
+    r = _analizar_benford(texto)
+    ok_benford_natural = (not r["escalado"]) and not r["desviacion_significativa"]
+    resultados["benford_natural"] = {"ok": ok_benford_natural, "p_valor": r.get("p_valor")}
+
+    texto, verdad = _preset_texto("benford_inventado_demo")
+    r = _analizar_benford(texto)
+    ok_benford_inventado = (not r["escalado"]) and r["desviacion_significativa"]
+    resultados["benford_inventado"] = {"ok": ok_benford_inventado, "p_valor": r.get("p_valor")}
+
+    resultados["todos_correctos"] = ok_inflation and ok_demo and ok_trade and ok_benford_natural and ok_benford_inventado and ok_entropy
     return resultados
 
 
