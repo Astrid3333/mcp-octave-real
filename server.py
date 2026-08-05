@@ -29,6 +29,7 @@ from reaction_diffusion_tool import compute_reaction_diffusion
 from enzyme_kinetics_tool import compute_enzyme_kinetics
 from tritbraid_tool import compute_tritbraid
 from historian_tool import compute_historian
+from antibiotic_diffusion import compute_antibiotic_diffusion
 from ethnomath_tool import compute_ethnomath
 from ethnomath2_tool import compute_ethnomath2
 from ancient_calculators_tool import compute_ancient_calculator
@@ -478,5 +479,20 @@ def historian(mode: str = "validate", analysis_type: str = "inflation", text_dat
     (requiere text_data o preset), validate (corre 4 casos sinteticos con
     verdad conocida)."""
     return compute_historian(mode, analysis_type, text_data, preset)
+
+@mcp.tool()
+def antibiotic_diffusion(mode: str = "validate", C0: float = 1000.0, a: float = 0.3,
+                          D: float = 5e-6, MIC: float = 1.0, t: float = 57600.0) -> dict:
+    """Bioensayo de difusion en disco tipo Kirby-Bauer: difusion radial 2D
+    exacta (Carslaw & Jaeger, disco de concentracion uniforme C0 en agar
+    homogeneo) mas la aproximacion clasica de fuente puntual de Cooper.
+    Liberacion instantanea, sin degradacion ni consumo bacteriano --
+    estimacion de ordenes de magnitud, no reemplaza ensayo real. Modes:
+    zone_prediction (radio/diametro de halo a un C0 y tiempo de incubacion
+    dados, exacto vs aproximacion puntual), calibration_curve (barre varias
+    dosis, ajusta diametro^2 vs ln(C0) -- ley lineal de Cooper), validate
+    (4 chequeos: conservacion de masa, limite de fuente puntual, limite de
+    tiempo temprano, ley de Cooper)."""
+    return compute_antibiotic_diffusion(mode, C0, a, D, MIC, t)
 if __name__ == "__main__":
     mcp.run()
