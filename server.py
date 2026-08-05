@@ -24,6 +24,7 @@ from symbolic_tool import compute_symbolic
 from optimization_tool import compute_optimization
 from pde_tool import compute_pde
 from braid_group_tool import compute_braid_group
+from workspace_tool import save_run, load_run, list_runs, describe_run, delete_run
 from population_dynamics_tool import compute_population_dynamics
 from reaction_diffusion_tool import compute_reaction_diffusion
 from enzyme_kinetics_tool import compute_enzyme_kinetics
@@ -542,6 +543,36 @@ def historical_extractor(mode: str = "validate", text_data: str = None,
     validate (preset sintetico: trigo/cebada correlacionados, salario real
     cayendo)."""
     return compute_historical_extractor(mode, text_data, objetos, objeto_salario)
+
+@mcp.tool()
+def workspace_save(run_id: str = None, data: dict = None, meta: dict = None) -> dict:
+    """Guarda arrays/resultados de un analisis bajo un run_id para reutilizarlos
+    despues (ej: en plot_tool) sin recalcular. Si run_id se omite, se autogenera."""
+    return save_run(run_id, data or {}, meta)
+
+@mcp.tool()
+def workspace_load(run_id: str, keys: list = None) -> dict:
+    """Carga un run guardado previamente por run_id. Si keys se omite, devuelve
+    todos los arrays (cuidado con trayectorias muy largas: usar workspace_describe
+    primero)."""
+    return load_run(run_id, keys)
+
+@mcp.tool()
+def workspace_list(filter_tool: str = None) -> dict:
+    """Lista todos los runs guardados en el workspace, opcionalmente filtrados
+    por tool de origen (ej: 'compute_lyapunov_exponent')."""
+    return list_runs(filter_tool)
+
+@mcp.tool()
+def workspace_describe(run_id: str) -> dict:
+    """Muestra shapes/dtypes de un run sin cargar los arrays completos a memoria
+    (util para trayectorias largas antes de graficar)."""
+    return describe_run(run_id)
+
+@mcp.tool()
+def workspace_delete(run_id: str) -> dict:
+    """Borra un run del workspace (libera espacio en disco)."""
+    return delete_run(run_id)
 
 if __name__ == "__main__":
     mcp.run()
