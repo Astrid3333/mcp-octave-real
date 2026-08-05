@@ -18,6 +18,7 @@ from entropy_structure_tool import compute_entropy_structure
 from music_math_tool import compute_music_math
 from linear_algebra_tool import compute_linear_algebra
 from persistent_homology_tool import compute_persistent_homology
+from statistics_tool import compute_statistics
 from ethnomath_tool import compute_ethnomath
 from ethnomath2_tool import compute_ethnomath2
 from ancient_calculators_tool import compute_ancient_calculator
@@ -351,5 +352,15 @@ def persistent_homology(preset: str = "circle", points: list = None,
     para datos reales -- por ejemplo nubes reconstruidas de un embedding
     de Takens (conexion directa con TritOS)."""
     return compute_persistent_homology(preset, points, max_edge_length, max_dim, n_points, seed)
+
+@mcp.tool()
+def statistics(mode: str = "linear_regression", preset: str = "known_linear",
+                x: list = None, y: list = None, sample: list = None, mu0: float = 5.0,
+                prior_a: float = 1.0, prior_b: float = 1.0, successes: int = 7, trials: int = 10) -> dict:
+    """Estadistica e inferencia via Octave: linear_regression (minimos
+    cuadrados), correlation (Pearson r), t_test (una muestra, t-stat +
+    p-value via betainc), bayesian_beta_binomial (actualizacion conjugada
+    Beta-Binomial). Pensado para analisis de riesgo (QGIS)."""
+    return compute_statistics(mode, preset, x, y, sample, mu0, prior_a, prior_b, successes, trials)
 if __name__ == "__main__":
     mcp.run()
