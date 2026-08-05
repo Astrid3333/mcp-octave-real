@@ -1,15 +1,16 @@
 # octave-mcp
 
 Servidor MCP (Model Context Protocol) que expone GNU Octave y una colección
-de herramientas de cómputo numérico, matemática histórica/etnomatemática y
-sistemas dinámicos como tools invocables desde Claude Desktop.
+de herramientas de cómputo numérico, matemática histórica/etnomatemática,
+sistemas dinámicos y matemática pura/aplicada como tools invocables desde
+Claude Desktop.
 
-Construido con [FastMCP](https://github.com/jlowin/fastmcp). 22 tools.
+Construido con [FastMCP](https://github.com/jlowin/fastmcp). 29 tools.
 
 ## Qué hace
 
 Cada módulo del repo es un tool independiente registrado en `server.py`.
-Se agrupan en cuatro grandes áreas:
+Se agrupan en cinco grandes áreas:
 
 ### Sistemas dinámicos y cómputo numérico
 - **`lyapunov_tool`** — exponente de Lyapunov máximo (λ₁) para cuantificar
@@ -34,11 +35,49 @@ Se agrupan en cuatro grandes áreas:
   atractor caótico Chen-Lee integrado en Octave).
 - **`cross_validation_tool`** — valida resultados de dimensión fractal
   corriendo el mismo sistema con dos motores numéricos independientes
-  (Octave ode45 + scipy RK45), para detectar cuándo no confiar en un
-  resultado sin necesidad de investigar manualmente.
+  (Octave ode45 + scipy RK45).
 - **`ancestral_octave_tool`** — corre métodos de cómputo ancestral
   (suanpan_add, chinese_remainder, vedic_multiply, archimedes_pi,
   quipu_encode) como funciones Octave nativas.
+- **`pde_tool`** — ecuaciones de calor y onda 1D vía diferencias finitas
+  explícitas, validado contra la solución analítica del primer modo
+  normal. Extensión de `stiff_ode_tool` hacia EDPs.
+
+### Matemática pura / álgebra / análisis
+- **`linear_algebra_tool`** — autovalores/autovectores, SVD, PCA, análisis
+  de matrices (rango, número de condición, determinante) vía Octave nativo.
+- **`persistent_homology_tool`** — homología persistente (H₀, H₁) sobre
+  nubes de puntos vía complejo de Vietoris-Rips y reducción de matriz de
+  borde, implementado en Python puro. Validado contra la fórmula analítica
+  del nacimiento/muerte de un lazo en un círculo. Conexión directa con
+  TritOS (embedding de Takens + homología persistente).
+- **`statistics_tool`** — regresión lineal, correlación de Pearson, t-test
+  de una muestra (p-value vía `betainc` nativo de Octave), inferencia
+  bayesiana conjugada beta-binomial.
+- **`number_theory_tool`** — test de primalidad Miller-Rabin (detecta
+  números de Carmichael), RSA de juguete (validado contra el ejemplo
+  clásico del paper original), aritmética de curvas elípticas (validado
+  contra Hankerson et al). Python puro, precisión arbitraria. Conecta con
+  `chinese_remainder` vía la optimización RSA-CRT.
+- **`symbolic_tool`** — álgebra simbólica vía sympy: simplificación,
+  resolución de ecuaciones, derivadas, integrales (indefinidas y
+  definidas), series de Taylor. Puente necesario porque Octave es 100%
+  numérico.
+- **`optimization_tool`** — programación lineal vía `glpk` nativo de
+  Octave, descenso de gradiente con gradiente exacto simbólico (vía
+  sympy, no diferencias finitas).
+
+### Análisis de estructura y sistemas sin descifrar
+- **`entropy_structure_tool`** — entropía de orden 0 y entropía condicional
+  de orden 1 sobre secuencias de símbolos, para evaluar evidencia de
+  estructura combinatoria (tipo Rao et al. 2009 sobre la escritura del
+  valle del Indo) vs. ausencia de estructura (tally marks/conteo).
+
+### Matemática musical
+- **`music_math_tool`** — coma pitagórica exacta, comparación de
+  intervalos justos vs. temperamento igual, serie armónica, escala de
+  división ternaria de la octava (conexión con TritOS), análisis
+  espectral real vía FFT en Octave.
 
 ### Etnomatemática / matemática histórica
 - **`ethnomath_tool`** — maya_long_count, chinese_remainder, vedic_multiply,
@@ -47,48 +86,24 @@ Se agrupan en cuatro grandes áreas:
   persian_alkashi_sin1, russian_peasant, ottoman_taqi_al_din,
   norse_rune_calendar, southeast_asian_metonic.
 - **`ancient_calculators_tool`** — simuladores de calculadoras históricas
-  reales operando sus cuentas/fichas: suanpan, soroban, ábaco romano,
-  yupana (hipótesis De Pasquale, con aviso de disputa académica).
-- **`levant_tool`** — matemática cananea y de Judá/Israel: hebrew_molad
-  (conjunción lunar media, ciclo metónico de 19 años), hebrew_gematria,
-  canaanite_phoenician_numeral.
-- **`originarios_tool`** — numeración de pueblos originarios:
-  mapuche_numeral (rakin, decimal aditivo-multiplicativo), aymara_numeral.
+  reales: suanpan, soroban, ábaco romano, yupana (hipótesis De Pasquale,
+  con aviso de disputa académica).
+- **`levant_tool`** — matemática cananea y de Judá/Israel: hebrew_molad,
+  hebrew_gematria, canaanite_phoenician_numeral.
+- **`originarios_tool`** — numeración mapuche (rakin) y aymara.
 - **`filosofia_historia_mate_tool`** — referencia curada sobre filosofía e
-  historia de la matemática (9 tópicos: escuelas filosóficas, crisis de
-  fundamentos, infinito, cero, sutras védicos, yupana, quipu,
-  etnomatemática como campo, numerales del Levante antiguo), marcando
-  explícitamente qué está establecido académicamente, qué es disputado, y
-  qué es reconstrucción moderna.
-
-### Análisis de estructura y sistemas sin descifrar
-- **`entropy_structure_tool`** — entropía de orden 0 y entropía condicional
-  de orden 1 sobre secuencias de símbolos, para evaluar evidencia de
-  estructura combinatoria (compatible con codificación tipo-lenguaje) vs.
-  ausencia de estructura (compatible con tally marks/conteo simple).
-  Presets sintéticos validados (`random_iid`, `markov_structured`) o
-  `custom` con secuencias reales (khipu, yupana, corpus sin descifrar).
-  Mismo enfoque metodológico que Rao et al. 2009 (*Science*) sobre la
-  escritura del valle del Indo — expone los baselines explícitamente en
-  vez de dar un veredicto, ya que ese debate sigue disputado (Sproat 2010).
-
-### Matemática musical
-- **`music_math_tool`** — coma pitagórica exacta (23.46 cents), comparación
-  de intervalos justos vs. temperamento igual (12-TET), serie armónica con
-  desviación en cents, escala de división ternaria de la octava (3ⁿ pasos
-  — conexión directa con TritOS: grafeno con 3 estados nativos -1/0/+1), y
-  análisis espectral real vía FFT en Octave (detección de parciales +
-  aspereza sensorial simplificada de Plomp-Levelt).
+  historia de la matemática (9 tópicos), marcando explícitamente qué está
+  establecido académicamente, qué es disputado, y qué es reconstrucción
+  moderna.
 
 ## Requisitos
 
-- Python 3 + [`fastmcp`](https://pypi.org/project/fastmcp/)
-- GNU Octave instalado y en el PATH (`octave --no-gui --no-init-file`)
-- `scipy` (solo para `cross_validation_tool`, validación cruzada Octave/scipy)
+- Python 3 + [`fastmcp`](https://pypi.org/project/fastmcp/) + `sympy`
+- GNU Octave con `glpk` (nativo, sin paquetes extra)
+- `scipy` (solo para `cross_validation_tool`)
 
 ```bash
-pip install fastmcp --break-system-packages
-pip install scipy --break-system-packages   # si vas a usar cross_validation
+pip install fastmcp sympy scipy --break-system-packages
 ```
 
 ## Uso con Claude Desktop
@@ -124,16 +139,18 @@ mcp_octave/
 - Los presets con estado académico incierto o disputado (yupana, sutras
   védicos) lo declaran explícitamente en el output en vez de presentar todo
   con el mismo nivel de certeza.
-- `cross_validation_tool` existe porque un resultado de dimensión fractal
-  del atractor Chen-Lee salió sesgado por submuestreo en una corrida
-  anterior; el módulo automatiza la verificación con un segundo motor
-  numérico para no depender de un único cálculo cuando la confianza en el
-  número importa.
-- `entropy_structure_tool` extiende ese mismo principio a un dominio
-  distinto: en vez de comparar dos motores numéricos, compara un resultado
-  real contra baselines sintéticos generados con la misma longitud y
-  alfabeto, para no reportar una métrica de estructura aislada sin
-  contexto de comparación.
+- `cross_validation_tool` y `entropy_structure_tool` comparten el mismo
+  principio: nunca reportar un número aislado sin un baseline de
+  comparación (otro motor numérico, o una secuencia sintética generada con
+  el mismo tamaño y alfabeto).
+- Los siete módulos de matemática pura/aplicada (`linear_algebra`,
+  `persistent_homology`, `statistics`, `number_theory`, `symbolic`,
+  `optimization`, `pde`) siguen todos el mismo patrón: cada preset se
+  valida contra un resultado analítico o de libro de texto conocido antes
+  de aplicarse a datos custom.
+- `persistent_homology_tool` y `entropy_structure_tool` están pensados
+  para poder correr sobre datos arqueológicos reales (khipu, yupana,
+  corpus sin descifrar) si en algún momento se consigue el dataset.
 
 ## Autora
 
