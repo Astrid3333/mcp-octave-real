@@ -23,6 +23,13 @@ from number_theory_tool import compute_number_theory
 from symbolic_tool import compute_symbolic
 from optimization_tool import compute_optimization
 from pde_tool import compute_pde
+from braid_group_tool import compute_braid_group
+from population_dynamics_tool import compute_population_dynamics
+from reaction_diffusion_tool import compute_reaction_diffusion
+from enzyme_kinetics_tool import compute_enzyme_kinetics
+from population_dynamics_tool import compute_population_dynamics
+from reaction_diffusion_tool import compute_reaction_diffusion
+from enzyme_kinetics_tool import compute_enzyme_kinetics
 from ethnomath_tool import compute_ethnomath
 from ethnomath2_tool import compute_ethnomath2
 from ancient_calculators_tool import compute_ancient_calculator
@@ -407,5 +414,67 @@ def pde(mode: str = "heat_equation", preset: str = "known_first_mode", L: float 
     Validado contra solucion analitica del primer modo normal. Extension de
     stiff_ode_tool hacia EDPs -- relevante para propagacion termica LIG."""
     return compute_pde(mode, preset, L, coefficient, n_points, t_final, initial_profile)
+
+@mcp.tool()
+def braid_group(mode: str = "verify_braid_relation", sequence: str = "1,2,1",
+                 initial_state: list = None) -> dict:
+    """Grupos de trenzas y anyones de Fibonacci: verify_braid_relation
+    (unitariedad + relacion de Yang-Baxter), apply_braid_sequence (aplica
+    una secuencia de trenzas a un estado inicial, preserva la norma).
+    Basado en Bonesteel et al 2005. Conexion con computacion cuantica
+    topologica y con persistent_homology_tool / linear_algebra_tool."""
+    return compute_braid_group(mode, sequence, initial_state)
+
+@mcp.tool()
+def population_dynamics(mode: str = "lotka_volterra", a: float = 1.0, b: float = 0.1,
+                         c: float = 1.5, d: float = 0.075, x0: float = 10.0, y0: float = 5.0,
+                         r: float = 0.5, K: float = 100.0, t_max: float = 50.0, n_points: int = 50) -> dict:
+    """Dinamica de poblaciones: lotka_volterra (depredador-presa),
+    logistic_growth (capacidad de carga). Relevante para cultivo de kelp
+    en infraestructura de longline existente."""
+    return compute_population_dynamics(mode, a, b, c, d, x0, y0, r, K, t_max, n_points)
+
+@mcp.tool()
+def reaction_diffusion(mode: str = "check_turing_instability", a11: float = 1.0, a12: float = -1.0,
+                        a21: float = 2.0, a22: float = -1.5, Du: float = 1.0, Dv: float = 10.0) -> dict:
+    """Inestabilidad de Turing (reaccion-difusion linealizada): evalua las
+    4 condiciones analiticas clasicas y compara tasa de crecimiento numerica
+    vs analitica en el numero de onda mas inestable. Mecanismo detras de
+    patrones biologicos (rayas, manchas, morfogenesis)."""
+    return compute_reaction_diffusion(mode, a11, a12, a21, a22, Du, Dv)
+
+@mcp.tool()
+def enzyme_kinetics(mode: str = "compare", k1: float = 100.0, km1: float = 10.0, k2: float = 5.0,
+                     E0: float = 1.0, S0: float = 100.0, t_max: float = 5.0, n_points: int = 50) -> dict:
+    """Cinetica enzimatica: full_kinetics (E+S<->ES->E+P completo),
+    michaelis_menten (aproximacion QSSA), compare (valida cuando la
+    aproximacion es correcta, E0<<S0)."""
+    return compute_enzyme_kinetics(mode, k1, km1, k2, E0, S0, t_max, n_points)
+
+@mcp.tool()
+def population_dynamics(mode: str = "lotka_volterra", a: float = 1.0, b: float = 0.1,
+                         c: float = 1.5, d: float = 0.075, x0: float = 10.0, y0: float = 5.0,
+                         r: float = 0.5, K: float = 100.0, t_max: float = 50.0, n_points: int = 50) -> dict:
+    """Dinamica de poblaciones: lotka_volterra (depredador-presa),
+    logistic_growth (capacidad de carga). Relevante para cultivo de kelp
+    en infraestructura de longline existente."""
+    return compute_population_dynamics(mode, a, b, c, d, x0, y0, r, K, t_max, n_points)
+
+@mcp.tool()
+def reaction_diffusion(mode: str = "check_turing_instability", a11: float = 1.0, a12: float = -1.0,
+                        a21: float = 2.0, a22: float = -1.5, Du: float = 1.0, Dv: float = 10.0) -> dict:
+    """Inestabilidad de Turing (reaccion-difusion linealizada): evalua las
+    4 condiciones analiticas clasicas y compara tasa de crecimiento numerica
+    vs analitica en el numero de onda mas inestable. Mecanismo detras de
+    patrones biologicos (rayas, manchas, morfogenesis)."""
+    return compute_reaction_diffusion(mode, a11, a12, a21, a22, Du, Dv)
+
+@mcp.tool()
+def enzyme_kinetics(mode: str = "compare", k1: float = 100.0, km1: float = 10.0, k2: float = 5.0,
+                     E0: float = 1.0, S0: float = 100.0, t_max: float = 5.0, n_points: int = 50) -> dict:
+    """Cinetica enzimatica: full_kinetics (E+S<->ES->E+P completo),
+    michaelis_menten (aproximacion QSSA), compare (valida cuando la
+    aproximacion es correcta, E0<<S0)."""
+    return compute_enzyme_kinetics(mode, k1, km1, k2, E0, S0, t_max, n_points)
 if __name__ == "__main__":
     mcp.run()
