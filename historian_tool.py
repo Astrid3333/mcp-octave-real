@@ -219,10 +219,29 @@ def _analizar_trade_network(text_data):
     return resultado
 
 
+from units_entropy import analyze_units_entropy
+
+
+def _analizar_units_entropy(text_data, min_mentions=3):
+    categorias = analyze_units_entropy(text_data, min_mentions=min_mentions)
+    resueltas = {k: v for k, v in categorias.items() if v.get("ok")}
+    escalado = len(resueltas) == 0
+    resultado = {"escalado": escalado, "categorias": categorias}
+    if resueltas:
+        principal = max(resueltas, key=lambda k: resueltas[k]["total"])
+        resultado["categoria_principal"] = principal
+        resultado["homogeneidad_pct"] = resueltas[principal]["homogeneidad_pct"]
+        resultado["unidad_dominante"] = resueltas[principal]["unidad_dominante"]
+    if escalado:
+        resultado["warning"] = "ninguna categoria alcanzo el minimo de menciones; ver 'categorias' para los conteos crudos"
+    return resultado
+
+
 _ANALIZADORES = {
     "inflation": _analizar_inflation,
     "demographics": _analizar_demographics,
     "trade_network": _analizar_trade_network,
+    "units_entropy": _analizar_units_entropy,
 }
 
 
@@ -262,6 +281,19 @@ def _preset_texto(preset):
         ]
         return " ".join(frases), {"hub_esperado": "Castro"}
 
+    if preset == "units_entropy_demo":
+        # capacidad homogenea deliberada: una sola unidad (fanega) repetida
+        frases = [
+            "Se cobraron 40 fanegas de trigo al senor.",
+            "El diezmo sumo otras 30 fanegas de cebada.",
+            "Ademas se registraron 25 fanegas de centeno en el granero.",
+        ]
+        return " ".join(frases), {
+            "categoria_esperada": "capacidad",
+            "unidad_esperada": "fanega",
+            "homogeneidad_esperada_pct": 100.0,
+        }
+
     raise ValueError(f"preset desconocido: {preset!r}")
 
 
@@ -291,7 +323,17 @@ def _validar():
     ok_trade = (not r["escalado"]) and r["hub_principal"] == verdad["hub_esperado"]
     resultados["trade_network"] = {"ok": ok_trade, "hub_recuperado": r.get("hub_principal"), "hub_esperado": verdad["hub_esperado"]}
 
-    resultados["todos_correctos"] = ok_inflation and ok_demo and ok_trade
+    texto, verdad = _preset_texto("units_entropy_demo")
+    r = _analizar_units_entropy(texto)
+    ok_entropy = (
+        not r["escalado"]
+        and r.get("categoria_principal") == verdad["categoria_esperada"]
+        and r.get("unidad_dominante") == verdad["unidad_esperada"]
+        and abs(r.get("homogeneidad_pct", -1) - verdad["homogeneidad_esperada_pct"]) < 0.01
+    )
+    resultados["units_entropy"] = {"ok": ok_entropy, "homogeneidad_recuperada_pct": r.get("homogeneidad_pct"), "homogeneidad_esperada_pct": verdad["homogeneidad_esperada_pct"]}
+
+    resultados["todos_correctos"] = ok_inflation and ok_demo and ok_trade and ok_entropy
     return resultados
 
 

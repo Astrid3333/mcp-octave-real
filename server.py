@@ -500,10 +500,13 @@ def historian(mode: str = "validate", analysis_type: str = "inflation", text_dat
     """Orquestador de analisis historico: parsea numeros de texto libre via
     regex (sin NLP complejo), arma arrays de numpy, y ajusta el motor
     correspondiente segun analysis_type -- inflation/demographics (regresion
-    log-lineal: tasa anual %, R2) o trade_network (centralidad de red:
-    fuerza entrante + autovector, identifica el hub). Con pocos datos
-    extraidos, escala en vez de adivinar. Modes: analyze (requiere text_data
-    o preset), validate (corre 3 casos sinteticos con verdad conocida)."""
+    log-lineal: tasa anual %, R2), trade_network (centralidad de red:
+    fuerza entrante + autovector, identifica el hub), o units_entropy
+    (entropia de Shannon sobre unidades historicas de medida sacadas del
+    texto -- capacidad/longitud/peso -- indice de homogeneidad 0-100%).
+    Con pocos datos extraidos, escala en vez de adivinar. Modes: analyze
+    (requiere text_data o preset), validate (corre 4 casos sinteticos con
+    verdad conocida)."""
     return compute_historian(mode, analysis_type, text_data, preset)
 if __name__ == "__main__":
     mcp.run()
