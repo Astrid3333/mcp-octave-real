@@ -27,9 +27,11 @@ from braid_group_tool import compute_braid_group
 from population_dynamics_tool import compute_population_dynamics
 from reaction_diffusion_tool import compute_reaction_diffusion
 from enzyme_kinetics_tool import compute_enzyme_kinetics
+from tritbraid_tool import compute_tritbraid
 from population_dynamics_tool import compute_population_dynamics
 from reaction_diffusion_tool import compute_reaction_diffusion
 from enzyme_kinetics_tool import compute_enzyme_kinetics
+from tritbraid_tool import compute_tritbraid
 from ethnomath_tool import compute_ethnomath
 from ethnomath2_tool import compute_ethnomath2
 from ancient_calculators_tool import compute_ancient_calculator
@@ -476,5 +478,18 @@ def enzyme_kinetics(mode: str = "compare", k1: float = 100.0, km1: float = 10.0,
     michaelis_menten (aproximacion QSSA), compare (valida cuando la
     aproximacion es correcta, E0<<S0)."""
     return compute_enzyme_kinetics(mode, k1, km1, k2, E0, S0, t_max, n_points)
+
+@mcp.tool()
+def tritbraid(mode: str = "validate_physics", program: str = "1,2,M,0,M,2,M", seed: int = 42,
+              initial_state: list = None) -> dict:
+    """DSL TritBraid: secuencias de trenzas de Fibonacci que colapsan a un trit
+    ternario (-1,0,+1). Tokens del programa: 0=identidad, 1=sigma1 (diagonal,
+    no mezcla canales), 2=sigma2 (mezcla via matriz F), M=medicion (colapso
+    proyectivo, regla de Born). Modes: run_program (ejecuta el programa dado
+    y devuelve traza completa), validate_physics (verifica unitariedad,
+    invariancia bajo identidad/sigma1, y mezcla bajo sigma2). Misma
+    construccion de Bonesteel et al 2005 que braid_group_tool -- puente
+    concreto hacia el sistema ternario de TritOS."""
+    return compute_tritbraid(mode, program, seed, initial_state)
 if __name__ == "__main__":
     mcp.run()
