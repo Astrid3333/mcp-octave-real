@@ -22,6 +22,7 @@ from statistics_tool import compute_statistics
 from number_theory_tool import compute_number_theory
 from symbolic_tool import compute_symbolic
 from optimization_tool import compute_optimization
+from pde_tool import compute_pde
 from ethnomath_tool import compute_ethnomath
 from ethnomath2_tool import compute_ethnomath2
 from ancient_calculators_tool import compute_ancient_calculator
@@ -396,5 +397,15 @@ def optimization(mode: str = "linear_programming", preset: str = "known_lp", sen
     gradient_descent (gradiente EXACTO simbolico via sympy, no diferencias
     finitas). Presets validados contra optimos conocidos."""
     return compute_optimization(mode, preset, sense, c, A_ub, b_ub, expression, start, learning_rate, n_iterations)
+
+@mcp.tool()
+def pde(mode: str = "heat_equation", preset: str = "known_first_mode", L: float = 1.0,
+        coefficient: float = 0.01, n_points: int = 50, t_final: float = None,
+        initial_profile: list = None) -> dict:
+    """Ecuaciones en derivadas parciales via diferencias finitas explicitas
+    en Octave: heat_equation (u_t=alpha*u_xx), wave_equation (u_tt=c^2*u_xx).
+    Validado contra solucion analitica del primer modo normal. Extension de
+    stiff_ode_tool hacia EDPs -- relevante para propagacion termica LIG."""
+    return compute_pde(mode, preset, L, coefficient, n_points, t_final, initial_profile)
 if __name__ == "__main__":
     mcp.run()
