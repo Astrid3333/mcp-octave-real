@@ -30,6 +30,8 @@ from enzyme_kinetics_tool import compute_enzyme_kinetics
 from tritbraid_tool import compute_tritbraid
 from historian_tool import compute_historian
 from antibiotic_diffusion import compute_antibiotic_diffusion
+from plague_sir_tool import compute_plague_sir
+from settlement_clusters_tool import compute_settlement_clusters
 from ethnomath_tool import compute_ethnomath
 from ethnomath2_tool import compute_ethnomath2
 from ancient_calculators_tool import compute_ancient_calculator
@@ -496,5 +498,33 @@ def antibiotic_diffusion(mode: str = "validate", C0: float = 1000.0, a: float = 
     (4 chequeos: conservacion de masa, limite de fuente puntual, limite de
     tiempo temprano, ley de Cooper)."""
     return compute_antibiotic_diffusion(mode, C0, a, D, MIC, t)
+
+@mcp.tool()
+def plague_sir(mode: str = "validate", text_data: str = None, preset: str = None,
+                gamma: float = 0.4, poblacion_estimada: float = 2000.0) -> dict:
+    """SIR inverso para brotes historicos de peste: parsea defunciones
+    semanales de texto libre via regex, ajusta beta (tasa de contagio) con
+    curve_fit manteniendo gamma fijo (parametro de literatura, no medido),
+    integra SIR con RK4, y reporta R0=beta/gamma. Proxy cuantitativo cuando
+    no hay fuente epidemiologica directa -- no corrige subregistro,
+    migracion, ni estacionalidad. Modes: fit_beta (requiere text_data o
+    preset='peste_demo'), validate (compara contra brote sintetico con
+    beta/R0 conocidos)."""
+    return compute_plague_sir(mode, text_data, preset, gamma, poblacion_estimada)
+
+@mcp.tool()
+def settlement_clusters(mode: str = "validate", puntos_por_periodo: list = None,
+                         periodos: list = None, radio: float = 1.0,
+                         radio_match: float = 2.0) -> dict:
+    """Proxy arqueologico de barrios/clusters sociales: clusteriza
+    coordenadas de hallazgos por distancia (union-find a radio fijo) en
+    cada periodo/estrato, y rastrea clusters entre periodos consecutivos
+    por proximidad de centroides -- detecta nacimiento y muerte de
+    asentamientos. No hace inferencia cronologica, el orden de periodos
+    lo define quien llama. Modes: analyze (requiere puntos_por_periodo y
+    periodos), validate (corre preset sintetico con migracion/fision
+    conocida)."""
+    return compute_settlement_clusters(mode, puntos_por_periodo, periodos, radio, radio_match)
+
 if __name__ == "__main__":
     mcp.run()
