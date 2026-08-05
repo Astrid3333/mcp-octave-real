@@ -28,10 +28,12 @@ from population_dynamics_tool import compute_population_dynamics
 from reaction_diffusion_tool import compute_reaction_diffusion
 from enzyme_kinetics_tool import compute_enzyme_kinetics
 from tritbraid_tool import compute_tritbraid
+from historian_tool import compute_historian
 from population_dynamics_tool import compute_population_dynamics
 from reaction_diffusion_tool import compute_reaction_diffusion
 from enzyme_kinetics_tool import compute_enzyme_kinetics
 from tritbraid_tool import compute_tritbraid
+from historian_tool import compute_historian
 from ethnomath_tool import compute_ethnomath
 from ethnomath2_tool import compute_ethnomath2
 from ancient_calculators_tool import compute_ancient_calculator
@@ -491,5 +493,17 @@ def tritbraid(mode: str = "validate_physics", program: str = "1,2,M,0,M,2,M", se
     construccion de Bonesteel et al 2005 que braid_group_tool -- puente
     concreto hacia el sistema ternario de TritOS."""
     return compute_tritbraid(mode, program, seed, initial_state)
+
+@mcp.tool()
+def historian(mode: str = "validate", analysis_type: str = "inflation", text_data: str = None,
+              preset: str = None) -> dict:
+    """Orquestador de analisis historico: parsea numeros de texto libre via
+    regex (sin NLP complejo), arma arrays de numpy, y ajusta el motor
+    correspondiente segun analysis_type -- inflation/demographics (regresion
+    log-lineal: tasa anual %, R2) o trade_network (centralidad de red:
+    fuerza entrante + autovector, identifica el hub). Con pocos datos
+    extraidos, escala en vez de adivinar. Modes: analyze (requiere text_data
+    o preset), validate (corre 3 casos sinteticos con verdad conocida)."""
+    return compute_historian(mode, analysis_type, text_data, preset)
 if __name__ == "__main__":
     mcp.run()
