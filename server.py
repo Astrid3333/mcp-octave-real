@@ -20,6 +20,7 @@ from linear_algebra_tool import compute_linear_algebra
 from persistent_homology_tool import compute_persistent_homology
 from statistics_tool import compute_statistics
 from number_theory_tool import compute_number_theory
+from symbolic_tool import compute_symbolic
 from ethnomath_tool import compute_ethnomath
 from ethnomath2_tool import compute_ethnomath2
 from ancient_calculators_tool import compute_ancient_calculator
@@ -376,5 +377,14 @@ def number_theory(mode: str = "primality_test", preset: str = "known_cases", n: 
     Hankerson et al). Conecta con chinese_remainder via RSA-CRT."""
     return compute_number_theory(mode, preset, n, p, q, e, message,
                                    curve_a, curve_b, curve_p, point1, point2)
+
+@mcp.tool()
+def symbolic(mode: str = "simplify", preset: str = "known_simplify", expression: str = None,
+             variable: str = "x", lower_limit: str = None, upper_limit: str = None,
+             point: str = "0", order: int = 5) -> dict:
+    """Algebra simbolica via sympy: simplify, solve (resolver ecuaciones),
+    differentiate (derivada), integrate (indefinida o definida con limites),
+    taylor_series. Puente necesario porque Octave es 100% numerico."""
+    return compute_symbolic(mode, preset, expression, variable, lower_limit, upper_limit, point, order)
 if __name__ == "__main__":
     mcp.run()
