@@ -32,6 +32,7 @@ from historian_tool import compute_historian
 from antibiotic_diffusion import compute_antibiotic_diffusion
 from plague_sir_tool import compute_plague_sir
 from settlement_clusters_tool import compute_settlement_clusters
+from historical_extractor_tool import compute_historical_extractor
 from ethnomath_tool import compute_ethnomath
 from ethnomath2_tool import compute_ethnomath2
 from ancient_calculators_tool import compute_ancient_calculator
@@ -525,6 +526,22 @@ def settlement_clusters(mode: str = "validate", puntos_por_periodo: list = None,
     periodos), validate (corre preset sintetico con migracion/fision
     conocida)."""
     return compute_settlement_clusters(mode, puntos_por_periodo, periodos, radio, radio_match)
+
+
+@mcp.tool()
+def historical_extractor(mode: str = "validate", text_data: str = None,
+                          objetos: list = None, objeto_salario: str = None) -> dict:
+    """Extrae MULTIPLES series (anio, valor) de un mismo texto historico via
+    regex por oracion (no NLP), una serie por objeto/concepto mencionado
+    (ej: trigo, cebada, jornal). Corre tendencia por regresion log-lineal
+    en cada serie (reusa el motor de historian), calcula salario real
+    indexado si se indica objeto_salario, y correlacion de Pearson entre
+    series de precios que se solapan en anios. NO interpreta causalidad
+    historica (crisis, epidemias) -- solo tasas, indices y correlaciones.
+    Modes: analyze (requiere text_data + objetos, opcional objeto_salario),
+    validate (preset sintetico: trigo/cebada correlacionados, salario real
+    cayendo)."""
+    return compute_historical_extractor(mode, text_data, objetos, objeto_salario)
 
 if __name__ == "__main__":
     mcp.run()
