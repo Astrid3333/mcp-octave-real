@@ -21,6 +21,7 @@ from persistent_homology_tool import compute_persistent_homology
 from statistics_tool import compute_statistics
 from number_theory_tool import compute_number_theory
 from symbolic_tool import compute_symbolic
+from optimization_tool import compute_optimization
 from ethnomath_tool import compute_ethnomath
 from ethnomath2_tool import compute_ethnomath2
 from ancient_calculators_tool import compute_ancient_calculator
@@ -386,5 +387,14 @@ def symbolic(mode: str = "simplify", preset: str = "known_simplify", expression:
     differentiate (derivada), integrate (indefinida o definida con limites),
     taylor_series. Puente necesario porque Octave es 100% numerico."""
     return compute_symbolic(mode, preset, expression, variable, lower_limit, upper_limit, point, order)
+
+@mcp.tool()
+def optimization(mode: str = "linear_programming", preset: str = "known_lp", sense: str = "max",
+                  c: list = None, A_ub: list = None, b_ub: list = None, expression: str = None,
+                  start: list = None, learning_rate: float = 0.1, n_iterations: int = 200) -> dict:
+    """Optimizacion: linear_programming (via glpk nativo de Octave),
+    gradient_descent (gradiente EXACTO simbolico via sympy, no diferencias
+    finitas). Presets validados contra optimos conocidos."""
+    return compute_optimization(mode, preset, sense, c, A_ub, b_ub, expression, start, learning_rate, n_iterations)
 if __name__ == "__main__":
     mcp.run()
