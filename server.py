@@ -25,6 +25,7 @@ from optimization_tool import compute_optimization
 from pde_tool import compute_pde
 from braid_group_tool import compute_braid_group
 from workspace_tool import save_run, load_run, list_runs, describe_run, delete_run
+from plot_tool import plot_run
 from population_dynamics_tool import compute_population_dynamics
 from reaction_diffusion_tool import compute_reaction_diffusion
 from enzyme_kinetics_tool import compute_enzyme_kinetics
@@ -578,6 +579,15 @@ def workspace_describe(run_id: str) -> dict:
 def workspace_delete(run_id: str) -> dict:
     """Borra un run del workspace (libera espacio en disco)."""
     return delete_run(run_id)
+
+@mcp.tool()
+def plot_workspace_run(run_id: str, plot_type: str = "auto", title: str = None, array_name: str = None) -> dict:
+    """Genera una visualizacion (PNG en base64 + guardado en disco) a partir de
+    un run guardado en el workspace (ej: la trayectoria de un atractor guardada
+    por compute_lyapunov con run_id). No recalcula nada, solo lee y grafica.
+    plot_type: auto (infiere segun el tool de origen), attractor_3d,
+    attractor_2d, line, scatter, heatmap."""
+    return plot_run(run_id, plot_type, title, array_name)
 
 if __name__ == "__main__":
     mcp.run()
