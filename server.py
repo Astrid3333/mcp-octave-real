@@ -26,6 +26,7 @@ from pde_tool import compute_pde
 from braid_group_tool import compute_braid_group
 from workspace_tool import save_run, load_run, list_runs, describe_run, delete_run
 from plot_tool import plot_run
+from numeral_systems_embedding_tool import compute_numeral_systems_embedding
 from population_dynamics_tool import compute_population_dynamics
 from reaction_diffusion_tool import compute_reaction_diffusion
 from enzyme_kinetics_tool import compute_enzyme_kinetics
@@ -592,6 +593,22 @@ def plot_workspace_run(run_id: str, plot_type: str = "auto", title: str = None, 
     plot_type: auto (infiere segun el tool de origen), attractor_3d,
     attractor_2d, line, scatter, heatmap."""
     return plot_run(run_id, plot_type, title, array_name)
+
+@mcp.tool()
+def numeral_systems_embedding(method: str = "umap", extra_systems: list = None,
+                               n_neighbors: int = None, perplexity: float = None,
+                               random_state: int = 1, run_id: str = None) -> dict:
+    """Vectoriza sistemas numericos antiguos (base, tipo posicional/aditivo/
+    fisico, presencia de cero, redundancia representacional, soporte fisico)
+    y proyecta a 2D via UMAP o t-SNE, para explorar agrupamientos
+    estructurales entre culturas. Dataset base: maya_long_count, suanpan,
+    soroban, roman_hand_abacus, yupana_depasquale, quipu, ifa_binary.
+    Extensible via extra_systems (lista de dicts con el mismo schema). Con
+    pocos sistemas, n_neighbors/perplexity se clampean automaticamente. Si
+    se indica run_id, guarda el embedding en el workspace para graficar
+    despues con plot_workspace_run (plot_type=numeral_embedding)."""
+    return compute_numeral_systems_embedding(method, extra_systems, n_neighbors,
+                                              perplexity, random_state, run_id)
 
 if __name__ == "__main__":
     mcp.run()

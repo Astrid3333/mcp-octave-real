@@ -63,6 +63,7 @@ _AUTO_PLOT_BY_TOOL = {
     "compute_lyapunov_exponent": "attractor_3d",
     "compute_persistent_homology": "persistence_diagram",
     "compute_settlement_clusters": "settlement_map",
+    "compute_numeral_systems_embedding": "numeral_embedding",
 }
 
 
@@ -256,6 +257,37 @@ def _plot_settlement_map(loaded_data: dict, run_id: str, title: str | None, meta
     return _fig_to_result(fig, run_id, "settlement_map")
 
 
+def _plot_numeral_embedding(loaded_data: dict, run_id: str, title: str | None, meta: dict) -> dict:
+    coords = np.asarray(loaded_data.get("embedding_coords", []))
+    names = meta.get("names", [])
+    regions = meta.get("regions", [])
+
+    if coords.size == 0 or not names:
+        return {"error": "numeral_embedding requiere embedding_coords no vacio y names en meta"}
+
+    fig, ax = plt.subplots(figsize=(8, 7))
+
+    unique_regions = sorted(set(regions)) if regions else ["(sin region)"]
+    cmap = plt.get_cmap("tab10")
+    region_color = {r: cmap(i % 10) for i, r in enumerate(unique_regions)}
+
+    for i, (x, y) in enumerate(coords):
+        region = regions[i] if i < len(regions) else "(sin region)"
+        ax.scatter(x, y, color=region_color[region], s=90, edgecolors="black", linewidths=0.5, zorder=3)
+        ax.annotate(names[i], (x, y), textcoords="offset points", xytext=(6, 4), fontsize=8)
+
+    handles = [plt.Line2D([0], [0], marker="o", linestyle="", color=region_color[r], label=r, markersize=8)
+               for r in unique_regions]
+    ax.legend(handles=handles, loc="best", fontsize=7, title="Region")
+
+    ax.set_title(title or f"Embedding de sistemas numericos ({meta.get('method', '')})")
+    ax.set_xlabel("dim 1")
+    ax.set_ylabel("dim 2")
+    ax.grid(alpha=0.2)
+
+    return _fig_to_result(fig, run_id, "numeral_embedding")
+
+
 def plot_run(
     run_id: str,
     plot_type: str = "auto",
@@ -298,7 +330,9 @@ def plot_run(
     if plot_type == "auto":
         plot_type = _AUTO_PLOT_BY_TOOL.get(meta.get("tool"), "line" if arr.ndim == 1 else "scatter")
 
-    if plot_type == "settlement_map":
+    if plot_type == "numeral_embedding":
+        return _plot_numeral_embedding(data, run_id, title, meta)
+    elif plot_type == "settlement_map":
         return _plot_settlement_map(data, run_id, title, meta)
     elif plot_type == "persistence_diagram":
         return _plot_persistence_diagram(data, run_id, title, meta)
@@ -330,7 +364,7 @@ PLOT_RUN_SCHEMA = {
             "run_id": {"type": "string"},
             "plot_type": {
                 "type": "string",
-                "enum": ["auto", "attractor_3d", "attractor_2d", "line", "scatter", "heatmap", "persistence_diagram", "settlement_map"],
+                "enum": ["auto", "attractor_3d", "attractor_2d", "line", "scatter", "heatmap", "persistence_diagram", "settlement_map", "numeral_embedding"],
                 "default": "auto",
             },
             "title": {"type": "string"},
