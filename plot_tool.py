@@ -62,6 +62,7 @@ PLOTS_DIR = WORKSPACE_DIR / "plots"
 _AUTO_PLOT_BY_TOOL = {
     "compute_lyapunov_exponent": "attractor_3d",
     "compute_persistent_homology": "persistence_diagram",
+    "compute_settlement_clusters": "settlement_map",
 }
 
 
@@ -215,6 +216,46 @@ def _plot_persistence_diagram(loaded_data: dict, run_id: str, title: str | None,
     return _fig_to_result(fig, run_id, "persistence_diagram")
 
 
+def _plot_settlement_map(loaded_data: dict, run_id: str, title: str | None, meta: dict) -> dict:
+    points_all = np.asarray(loaded_data.get("points_all", []))
+    centroids_all = np.asarray(loaded_data.get("centroids_all", []))
+    periodos = meta.get("periodos", [])
+
+    if points_all.size == 0 or not periodos:
+        return {"error": "settlement_map requiere points_all no vacio y periodos en meta"}
+
+    n_periodos = len(periodos)
+    fig, axes = plt.subplots(1, n_periodos, figsize=(5 * n_periodos, 5), squeeze=False)
+    axes = axes[0]
+
+    cmap = plt.get_cmap("tab10")
+
+    for idx_periodo in range(n_periodos):
+        ax = axes[idx_periodo]
+        mask = points_all[:, 0] == idx_periodo
+        pts = points_all[mask]
+        if pts.size:
+            labels = pts[:, 3].astype(int)
+            ax.scatter(pts[:, 1], pts[:, 2], c=[cmap(l % 10) for l in labels], s=40, alpha=0.85, edgecolors="black", linewidths=0.3)
+
+        if centroids_all.size:
+            cmask = centroids_all[:, 0] == idx_periodo
+            cents = centroids_all[cmask]
+            if cents.size:
+                ax.scatter(cents[:, 1], cents[:, 2], marker="x", color="black", s=80, linewidths=2, zorder=5)
+
+        ax.set_title(periodos[idx_periodo])
+        ax.set_xlabel("x")
+        if idx_periodo == 0:
+            ax.set_ylabel("y")
+        ax.grid(alpha=0.3)
+
+    fig.suptitle(title or f"Clusters de asentamientos por periodo ({meta.get('tool', '')})")
+    fig.tight_layout()
+
+    return _fig_to_result(fig, run_id, "settlement_map")
+
+
 def plot_run(
     run_id: str,
     plot_type: str = "auto",
@@ -257,7 +298,9 @@ def plot_run(
     if plot_type == "auto":
         plot_type = _AUTO_PLOT_BY_TOOL.get(meta.get("tool"), "line" if arr.ndim == 1 else "scatter")
 
-    if plot_type == "persistence_diagram":
+    if plot_type == "settlement_map":
+        return _plot_settlement_map(data, run_id, title, meta)
+    elif plot_type == "persistence_diagram":
         return _plot_persistence_diagram(data, run_id, title, meta)
     elif plot_type == "attractor_3d":
         return _plot_attractor_3d(arr, run_id, title, meta)
@@ -287,7 +330,7 @@ PLOT_RUN_SCHEMA = {
             "run_id": {"type": "string"},
             "plot_type": {
                 "type": "string",
-                "enum": ["auto", "attractor_3d", "attractor_2d", "line", "scatter", "heatmap", "persistence_diagram"],
+                "enum": ["auto", "attractor_3d", "attractor_2d", "line", "scatter", "heatmap", "persistence_diagram", "settlement_map"],
                 "default": "auto",
             },
             "title": {"type": "string"},

@@ -9,13 +9,15 @@ muerte (sin match en periodo siguiente) de asentamientos. No hace
 inferencia cronologica -- el orden de periodos lo define quien llama.
 """
 import math
+import numpy as np
+from workspace_tool import save_run
 
 
 def _dist(p, q):
     return math.hypot(p[0] - q[0], p[1] - q[1])
 
 
-def _clusterizar_periodo(puntos, radio):
+def _clusterizar_periodo_full(puntos, radio):
     n = len(puntos)
     padre = list(range(n))
 
@@ -41,11 +43,19 @@ def _clusterizar_periodo(puntos, radio):
         grupos.setdefault(r, []).append(i)
 
     clusters = []
-    for indices in grupos.values():
+    labels = [0] * n
+    for local_id, indices in enumerate(grupos.values()):
         pts = [puntos[i] for i in indices]
         cx = sum(p[0] for p in pts) / len(pts)
         cy = sum(p[1] for p in pts) / len(pts)
         clusters.append({"centroide": (cx, cy), "n_puntos": len(pts)})
+        for i in indices:
+            labels[i] = local_id
+    return clusters, labels
+
+
+def _clusterizar_periodo(puntos, radio):
+    clusters, _ = _clusterizar_periodo_full(puntos, radio)
     return clusters
 
 
@@ -100,7 +110,7 @@ def _preset_migracion_demo():
 
 
 def compute_settlement_clusters(mode="validate", puntos_por_periodo=None,
-                                 periodos=None, radio=1.0, radio_match=2.0):
+                                 periodos=None, radio=1.0, radio_match=2.0, run_id=None):
     if mode == "validate":
         puntos_por_periodo, periodos = _preset_migracion_demo()
         clusters_por_periodo = [_clusterizar_periodo(pts, radio) for pts in puntos_por_periodo]
@@ -130,9 +140,12 @@ def compute_settlement_clusters(mode="validate", puntos_por_periodo=None,
         if len(puntos_por_periodo) != len(periodos):
             return {"error": "puntos_por_periodo y periodos deben tener el mismo largo"}
         puntos_por_periodo = [[tuple(p) for p in pts] for pts in puntos_por_periodo]
-        clusters_por_periodo = [_clusterizar_periodo(pts, radio) for pts in puntos_por_periodo]
+
+        full_por_periodo = [_clusterizar_periodo_full(pts, radio) for pts in puntos_por_periodo]
+        clusters_por_periodo = [c for c, _ in full_por_periodo]
         eventos = _rastrear_ciclos_vida(clusters_por_periodo, periodos, radio_match)
-        return {
+
+        result = {
             "clusters_por_periodo": [
                 {"periodo": periodos[i], "n_clusters": len(c),
                  "clusters": [{"centroide": cl["centroide"], "n_puntos": cl["n_puntos"]} for cl in c]}
@@ -141,6 +154,39 @@ def compute_settlement_clusters(mode="validate", puntos_por_periodo=None,
             "eventos": eventos,
             "nota": "radio y radio_match son supuestos de escala espacial, no calibrados a ningun sitio real -- ajustar segun densidad de hallazgos y separacion tipica entre asentamientos conocidos de la region.",
         }
+
+        result["trajectory_saved"] = False
+        result["run_id"] = None
+        if run_id:
+            rows = []
+            for idx_periodo, (pts, (_, labels)) in enumerate(zip(puntos_por_periodo, full_por_periodo)):
+                for (x, y), label in zip(pts, labels):
+                    rows.append([idx_periodo, x, y, label])
+            points_all = np.array(rows) if rows else np.zeros((0, 4))
+
+            centroid_rows = []
+            for idx_periodo, clusters in enumerate(clusters_por_periodo):
+                for local_id, cl in enumerate(clusters):
+                    centroid_rows.append([idx_periodo, cl["centroide"][0], cl["centroide"][1], local_id, cl["n_puntos"]])
+            centroids_all = np.array(centroid_rows) if centroid_rows else np.zeros((0, 5))
+
+            save_result = save_run(
+                run_id,
+                {"points_all": points_all, "centroids_all": centroids_all},
+                {
+                    "tool": "compute_settlement_clusters",
+                    "periodos": list(periodos),
+                    "radio": radio,
+                    "radio_match": radio_match,
+                    "eventos": eventos,
+                    "columnas_points_all": ["idx_periodo", "x", "y", "cluster_local_id"],
+                    "columnas_centroids_all": ["idx_periodo", "cx", "cy", "cluster_local_id", "n_puntos"],
+                },
+            )
+            result["run_id"] = save_result.get("run_id")
+            result["trajectory_saved"] = "error" not in save_result
+
+        return result
 
     return {"error": f"modo desconocido: {mode!r} (validos: analyze, validate)"}
 

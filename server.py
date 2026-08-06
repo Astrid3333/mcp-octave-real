@@ -366,13 +366,15 @@ def linear_algebra(mode: str = "eigen", preset: str = "known_symmetric",
 @mcp.tool()
 def persistent_homology(preset: str = "circle", points: list = None,
                          max_edge_length: float = None, max_dim: int = 2,
-                         n_points: int = 20, seed: int = 1) -> dict:
+                         n_points: int = 20, seed: int = 1, run_id: str = None) -> dict:
     """Homologia persistente (H0, H1) sobre una nube de puntos via complejo
     de Vietoris-Rips y reduccion de matriz de borde. Presets sinteticos
     validados (circle, two_clusters, random_noise) o custom via 'points'
     para datos reales -- por ejemplo nubes reconstruidas de un embedding
-    de Takens (conexion directa con TritOS)."""
-    return compute_persistent_homology(preset, points, max_edge_length, max_dim, n_points, seed)
+    de Takens (conexion directa con TritOS). Si se indica run_id, guarda
+    points/h0_diagram/h1_diagram en el workspace para graficar despues con
+    plot_workspace_run (plot_type=persistence_diagram)."""
+    return compute_persistent_homology(preset, points, max_edge_length, max_dim, n_points, seed, run_id)
 
 @mcp.tool()
 def statistics(mode: str = "linear_regression", preset: str = "known_linear",
@@ -523,7 +525,7 @@ def plague_sir(mode: str = "validate", text_data: str = None, preset: str = None
 @mcp.tool()
 def settlement_clusters(mode: str = "validate", puntos_por_periodo: list = None,
                          periodos: list = None, radio: float = 1.0,
-                         radio_match: float = 2.0) -> dict:
+                         radio_match: float = 2.0, run_id: str = None) -> dict:
     """Proxy arqueologico de barrios/clusters sociales: clusteriza
     coordenadas de hallazgos por distancia (union-find a radio fijo) en
     cada periodo/estrato, y rastrea clusters entre periodos consecutivos
@@ -531,8 +533,10 @@ def settlement_clusters(mode: str = "validate", puntos_por_periodo: list = None,
     asentamientos. No hace inferencia cronologica, el orden de periodos
     lo define quien llama. Modes: analyze (requiere puntos_por_periodo y
     periodos), validate (corre preset sintetico con migracion/fision
-    conocida)."""
-    return compute_settlement_clusters(mode, puntos_por_periodo, periodos, radio, radio_match)
+    conocida). Si se indica run_id (solo aplica en mode=analyze), guarda
+    points_all/centroids_all en el workspace para graficar despues con
+    plot_workspace_run (plot_type=settlement_map)."""
+    return compute_settlement_clusters(mode, puntos_por_periodo, periodos, radio, radio_match, run_id)
 
 
 @mcp.tool()
