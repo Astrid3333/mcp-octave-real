@@ -29,7 +29,7 @@ TIPOS DE PLOT SOPORTADOS (plot_type):
     "attractor_2d"  -> trayectoria proyectada en plano XY.
     "line"          -> serie temporal generica (cualquier array 1D o 2D).
     "scatter"       -> nube de puntos 2D generica.
-    "heatmap"       -> matriz 2D como heatmap (para settlement_clusters,
+    "persistence_diagram" -> diagrama birth/death de compute_persistent_homology (H0 azul, H1 rojo, triangulos = esenciales)\n    "heatmap"       -> matriz 2D como heatmap (para settlement_clusters,
                         matrices de distancia, etc. -- pendiente de datos
                         reales hasta que esos tools tengan su propio run_id).
 
@@ -61,6 +61,7 @@ PLOTS_DIR = WORKSPACE_DIR / "plots"
 # Mapea meta["tool"] del run guardado -> plot_type por defecto cuando plot_type="auto"
 _AUTO_PLOT_BY_TOOL = {
     "compute_lyapunov_exponent": "attractor_3d",
+    "compute_persistent_homology": "persistence_diagram",
 }
 
 
@@ -174,6 +175,46 @@ def _plot_heatmap(arr: np.ndarray, run_id: str, title: str | None, meta: dict, a
     return _fig_to_result(fig, run_id, "heatmap")
 
 
+def _plot_persistence_diagram(loaded_data: dict, run_id: str, title: str | None, meta: dict) -> dict:
+    h0 = np.asarray(loaded_data.get("h0_diagram", []))
+    h1 = np.asarray(loaded_data.get("h1_diagram", []))
+
+    all_finite = []
+    for arr in (h0, h1):
+        if arr.size:
+            finite_vals = arr[np.isfinite(arr)]
+            if finite_vals.size:
+                all_finite.append(finite_vals)
+    max_val = max((v.max() for v in all_finite), default=1.0) * 1.15 if all_finite else 1.0
+
+    fig, ax = plt.subplots(figsize=(6.5, 6.5))
+    ax.plot([0, max_val], [0, max_val], linestyle="--", color="#a0aec0", linewidth=1, label="diagonal (birth=death)")
+
+    def _scatter_diagram(diag, color, label):
+        if diag.size == 0:
+            return
+        births = diag[:, 0]
+        deaths = np.where(np.isinf(diag[:, 1]), max_val, diag[:, 1])
+        essential_mask = np.isinf(diag[:, 1])
+        ax.scatter(births[~essential_mask], deaths[~essential_mask], color=color, s=25, label=label, alpha=0.8)
+        if essential_mask.any():
+            ax.scatter(births[essential_mask], deaths[essential_mask], color=color, s=60, marker="^",
+                       label=f"{label} (esencial)", edgecolors="black", linewidths=0.5)
+
+    _scatter_diagram(h0, "#2b6cb0", "H0")
+    _scatter_diagram(h1, "#e53e3e", "H1")
+
+    ax.set_xlim(0, max_val)
+    ax.set_ylim(0, max_val)
+    ax.set_xlabel("nacimiento (birth)")
+    ax.set_ylabel("muerte (death)")
+    ax.set_title(title or f"Diagrama de persistencia ({meta.get('preset', '')})")
+    ax.legend(loc="lower right", fontsize=7)
+    ax.set_aspect("equal", adjustable="box")
+
+    return _fig_to_result(fig, run_id, "persistence_diagram")
+
+
 def plot_run(
     run_id: str,
     plot_type: str = "auto",
@@ -216,7 +257,9 @@ def plot_run(
     if plot_type == "auto":
         plot_type = _AUTO_PLOT_BY_TOOL.get(meta.get("tool"), "line" if arr.ndim == 1 else "scatter")
 
-    if plot_type == "attractor_3d":
+    if plot_type == "persistence_diagram":
+        return _plot_persistence_diagram(data, run_id, title, meta)
+    elif plot_type == "attractor_3d":
         return _plot_attractor_3d(arr, run_id, title, meta)
     elif plot_type == "attractor_2d":
         return _plot_attractor_2d(arr, run_id, title, meta)
@@ -244,7 +287,7 @@ PLOT_RUN_SCHEMA = {
             "run_id": {"type": "string"},
             "plot_type": {
                 "type": "string",
-                "enum": ["auto", "attractor_3d", "attractor_2d", "line", "scatter", "heatmap"],
+                "enum": ["auto", "attractor_3d", "attractor_2d", "line", "scatter", "heatmap", "persistence_diagram"],
                 "default": "auto",
             },
             "title": {"type": "string"},

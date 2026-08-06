@@ -30,6 +30,8 @@ dentro del ecosistema MCP.
 import math
 import itertools
 import random
+import numpy as np
+from workspace_tool import save_run
 
 PERSISTENT_HOMOLOGY_SCHEMA = {
     "name": "compute_persistent_homology",
@@ -55,6 +57,7 @@ PERSISTENT_HOMOLOGY_SCHEMA = {
             "max_dim": {"type": "integer", "default": 2, "description": "Dimension maxima de simplices: 2 = puntos+aristas+triangulos (permite H0 y H1)"},
             "n_points": {"type": "integer", "default": 20, "description": "Para presets sinteticos"},
             "seed": {"type": "integer", "default": 1},
+            "run_id": {"type": "string", "description": "Si se indica, guarda points/h0_diagram/h1_diagram en el workspace para graficar despues con plot_tool."},
         },
     },
 }
@@ -156,7 +159,7 @@ def _gen_random_noise(n_points, seed):
 
 
 def compute_persistent_homology(preset="circle", points=None, max_edge_length=None,
-                                 max_dim=2, n_points=20, seed=1):
+                                 max_dim=2, n_points=20, seed=1, run_id=None):
     known = None
 
     if preset == "custom":
@@ -204,6 +207,34 @@ def compute_persistent_homology(preset="circle", points=None, max_edge_length=No
     }
     if known:
         result["known_reference"] = known
+
+    result["trajectory_saved"] = False
+    result["run_id"] = None
+    if run_id:
+        def _to_diagram_array(barcode):
+            if not barcode:
+                return np.zeros((0, 2))
+            return np.array([[b["birth"], b["death"] if b["death"] is not None else np.inf] for b in barcode])
+
+        save_result = save_run(
+            run_id,
+            {
+                "points": np.array(pts),
+                "h0_diagram": _to_diagram_array(h0),
+                "h1_diagram": _to_diagram_array(h1),
+            },
+            {
+                "tool": "compute_persistent_homology",
+                "preset": preset,
+                "n_points": len(pts),
+                "max_edge_length_used": round(max_edge_length, 6),
+                "H0_essential_count": result["H0_essential_count"],
+                "H1_essential_count": result["H1_essential_count"],
+            },
+        )
+        result["run_id"] = save_result.get("run_id")
+        result["trajectory_saved"] = "error" not in save_result
+
     return result
 
 
