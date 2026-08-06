@@ -30,6 +30,8 @@ import tempfile
 import os
 import re
 from textwrap import dedent
+import numpy as np
+from workspace_tool import save_run
 
 # --- Sistemas predefinidos (ya usados en tu trabajo de TritOS) ---
 PRESET_SYSTEMS = {
@@ -98,6 +100,8 @@ def compute_lyapunov_exponent(
     d0: float = 1e-8,
     octave_bin: str = "octave",
     timeout_s: int = 60,
+    run_id: str | None = None,
+    save_trajectory_every: int = 10,
 ) -> dict:
     """
     Calcula el exponente de Lyapunov máximo (λ1) de un sistema dinámico.
@@ -139,6 +143,30 @@ def compute_lyapunov_exponent(
     param_assignments = "\n".join(f"{k} = {v};" for k, v in params.items())
     y0_str = "[" + "; ".join(str(v) for v in y0) + "]"
 
+    traj_path = None
+    TRAJ_INIT = ""
+    TRAJ_STEP = ""
+    TRAJ_SAVE = ""
+    if run_id:
+        traj_fd, traj_path = tempfile.mkstemp(suffix=".txt")
+        os.close(traj_fd)
+        traj_path_octave = traj_path.replace("\\", "/")
+        TRAJ_INIT = (
+            f"traj = zeros(ceil(N/{save_trajectory_every})+1, dim);\n"
+            "        traj(1,:) = y';\n"
+            "        traj_idx = 1;"
+        )
+        TRAJ_STEP = (
+            f"if mod(i, {save_trajectory_every}) == 0\n"
+            "            traj_idx++;\n"
+            "            traj(traj_idx,:) = y';\n"
+            "          endif"
+        )
+        TRAJ_SAVE = (
+            "traj = traj(1:traj_idx,:);\n"
+            f"        save('-ascii', '{traj_path_octave}', 'traj');"
+        )
+
     script = dedent(f"""
         1;
         {param_assignments}
@@ -154,6 +182,7 @@ def compute_lyapunov_exponent(
         y2 = y + [d0; zeros(dim-1,1)];
         sum_log = 0;
         n_renorm = 0;
+        {TRAJ_INIT}
 
         for i = 1:N
           k1=f(0,y);        k1b=f(0,y2);
@@ -168,7 +197,9 @@ def compute_lyapunov_exponent(
             n_renorm++;
             y2 = y + (y2-y)*(d0/d);
           endif
+          {TRAJ_STEP}
         end
+        {TRAJ_SAVE}
 
         lambda1 = sum_log / (n_renorm*dt);
         printf('LAMBDA1=%.10f\\n', lambda1);
@@ -193,6 +224,8 @@ def compute_lyapunov_exponent(
         os.unlink(script_path)
 
     if result.returncode != 0:
+        if traj_path and os.path.exists(traj_path):
+            os.unlink(traj_path)
         return {
             "error": "Octave devolvió un error.",
             "stderr": result.stderr.strip(),
@@ -205,6 +238,8 @@ def compute_lyapunov_exponent(
     y_final_match = re.search(r"Y_FINAL=([-\d.,]+)", out)
 
     if not lambda1_match:
+        if traj_path and os.path.exists(traj_path):
+            os.unlink(traj_path)
         return {"error": "No se pudo parsear la salida de Octave.", "stdout": out}
 
     lambda1 = float(lambda1_match.group(1))
@@ -215,6 +250,32 @@ def compute_lyapunov_exponent(
         interpretacion = "Estable / convergente (atractor de punto fijo o ciclo)"
     else:
         interpretacion = "Marginal (posible órbita periódica o cuasi-periódica)"
+
+    trajectory_saved = False
+    saved_run_id = None
+    if traj_path and os.path.exists(traj_path):
+        try:
+            traj_data = np.loadtxt(traj_path)
+            if traj_data.ndim == 1:
+                traj_data = traj_data.reshape(1, -1)
+            save_result = save_run(
+                run_id,
+                {"trayectoria": traj_data},
+                {
+                    "tool": "compute_lyapunov_exponent",
+                    "system": system,
+                    "params": params,
+                    "y0": y0,
+                    "dt": dt,
+                    "n_steps": n_steps,
+                    "save_trajectory_every": save_trajectory_every,
+                    "lambda1": lambda1,
+                },
+            )
+            saved_run_id = save_result.get("run_id")
+            trajectory_saved = "error" not in save_result
+        finally:
+            os.unlink(traj_path)
 
     return {
         "lambda1": lambda1,
@@ -228,6 +289,8 @@ def compute_lyapunov_exponent(
         "y_final": [float(v) for v in y_final_match.group(1).split(",")]
         if y_final_match
         else None,
+        "trajectory_saved": trajectory_saved,
+        "run_id": saved_run_id,
     }
 
 
@@ -256,6 +319,15 @@ LYAPUNOV_TOOL_SCHEMA = {
             "dt": {"type": "number"},
             "n_steps": {"type": "integer", "default": 20000},
             "d0": {"type": "number", "default": 1e-8},
+            "run_id": {
+                "type": "string",
+                "description": "Si se indica, guarda la trayectoria completa en el workspace bajo este run_id (para graficar despues con plot_tool).",
+            },
+            "save_trajectory_every": {
+                "type": "integer",
+                "default": 10,
+                "description": "Guardar 1 de cada N pasos de la trayectoria (solo si run_id esta presente).",
+            },
         },
         "required": [],
     },

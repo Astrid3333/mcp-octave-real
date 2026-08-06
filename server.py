@@ -114,15 +114,20 @@ def compute_lyapunov(
     dt: Optional[float] = None,
     n_steps: int = 20000,
     d0: float = 1e-8,
+    run_id: Optional[str] = None,
+    save_trajectory_every: int = 10,
 ) -> dict:
     """Calcula el exponente de Lyapunov maximo (lambda1) de un sistema dinamico
     (presets: chen_lee, burke_shaw, lorenz, rossler, o ecuaciones custom) para
-    cuantificar caos. lambda1>0 confirma comportamiento caotico."""
-    kwargs = {"system": system, "n_steps": n_steps, "d0": d0}
+    cuantificar caos. lambda1>0 confirma comportamiento caotico. Si se indica
+    run_id, guarda la trayectoria completa en el workspace (util para graficar
+    el atractor despues con plot_tool)."""
+    kwargs = {"system": system, "n_steps": n_steps, "d0": d0, "save_trajectory_every": save_trajectory_every}
     if custom_equations is not None: kwargs["custom_equations"] = custom_equations
     if custom_params is not None: kwargs["custom_params"] = custom_params
     if y0 is not None: kwargs["y0"] = y0
     if dt is not None: kwargs["dt"] = dt
+    if run_id is not None: kwargs["run_id"] = run_id
     return compute_lyapunov_exponent(**kwargs)
 
 @mcp.tool()
