@@ -7,7 +7,7 @@ via UMAP o t-SNE, para explorar agrupamientos y posibles "migraciones
 culturales" (sistemas estructuralmente cercanos, aunque geograficamente
 distantes, o viceversa).
 
-Dataset inicial (7 sistemas) extraido de los sistemas YA implementados en
+Dataset (11 sistemas) extraido de los sistemas YA implementados en
 ethnomath_tool.py, ancient_calculators_tool.py y ancestral_octave_tool.py --
 no reinventa los algoritmos, solo agrega la capa de metadata estructural
 que esos tools no exponen (base, tipo, region, periodo).
@@ -134,6 +134,54 @@ NUMERAL_SYSTEMS_DATASET = [
         "physical_device": True,
         "source_tool": "ancestral_octave_tool (preset ifa_cast)",
         "nota": "256 odu posibles via 8 lanzamientos binarios (cadena de opele o semillas ikin)",
+    },
+    {
+        "name": "babylonian_sexagesimal",
+        "region": "Mesopotamia",
+        "period": "~1900 BCE - 100 CE",
+        "base": 60,
+        "type": "positional",
+        "has_zero": False,
+        "redundant": False,
+        "physical_device": False,
+        "source_tool": None,
+        "nota": "posicional sexagesimal en cuneiforme; el 'hueco' como placeholder aparece tarde y no funciona como cero terminal hasta periodo seleucida",
+    },
+    {
+        "name": "egyptian_hieroglyphic",
+        "region": "Egipto",
+        "period": "~3000 BCE - 300 CE",
+        "base": 10,
+        "type": "additive",
+        "has_zero": False,
+        "redundant": False,
+        "physical_device": False,
+        "source_tool": None,
+        "nota": "simbolo distinto por potencia de 10 (1, 10, 100...), sin valor posicional, se suman los simbolos presentes",
+    },
+    {
+        "name": "indo_arabic",
+        "region": "India / difusion global via mundo arabe",
+        "period": "~500 CE - presente",
+        "base": 10,
+        "type": "positional",
+        "has_zero": True,
+        "redundant": False,
+        "physical_device": False,
+        "source_tool": None,
+        "nota": "sistema posicional con cero explicito que termino desplazando a la mayoria de los sistemas aditivos regionales",
+    },
+    {
+        "name": "greek_attic_ionic",
+        "region": "Grecia",
+        "period": "~600 BCE - 300 CE",
+        "base": 10,
+        "type": "additive",
+        "has_zero": False,
+        "redundant": False,
+        "physical_device": False,
+        "source_tool": None,
+        "nota": "sistema jonico/alfabetico: letras asignadas a unidades/decenas/centenas (variante posterior al aticoacrofonico), aditivo sin valor posicional",
     },
 ]
 
@@ -276,7 +324,9 @@ NUMERAL_EMBEDDING_SCHEMA = {
         "fisico, presencia de cero, redundancia representacional, soporte "
         "fisico) y proyecta a 2D via UMAP o t-SNE, para explorar agrupamientos "
         "estructurales. Dataset base: maya_long_count, suanpan, soroban, "
-        "roman_hand_abacus, yupana_depasquale, quipu, ifa_binary. Extensible "
+        "roman_hand_abacus, yupana_depasquale, quipu, ifa_binary, "
+        "babylonian_sexagesimal, egyptian_hieroglyphic, indo_arabic, "
+        "greek_attic_ionic. Extensible "
         "via extra_systems (mismo schema)."
     ),
     "inputSchema": {
