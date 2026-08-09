@@ -35,6 +35,7 @@ from historian_tool import compute_historian
 from antibiotic_diffusion import compute_antibiotic_diffusion
 from plague_sir_tool import compute_plague_sir
 from settlement_clusters_tool import compute_settlement_clusters
+from archaeological_simulation_tool import compute_archaeological_simulation
 from historical_extractor_tool import compute_historical_extractor
 from ethnomath_tool import compute_ethnomath
 from ethnomath2_tool import compute_ethnomath2
@@ -538,6 +539,28 @@ def settlement_clusters(mode: str = "validate", puntos_por_periodo: list = None,
     points_all/centroids_all en el workspace para graficar despues con
     plot_workspace_run (plot_type=settlement_map)."""
     return compute_settlement_clusters(mode, puntos_por_periodo, periodos, radio, radio_match, run_id)
+
+@mcp.tool()
+def archaeological_simulation(mode: str = "malthusian_growth",
+                               r: float = 0.5, K0: float = 100.0, K_amplitude: float = 20.0,
+                               K_period: float = 20.0, x0: float = 10.0, t_max: float = 100.0,
+                               n_points: int = 60, p_innovation: float = 0.03, q_imitation: float = 0.4,
+                               M_market: float = 1000.0, settlements: list = None,
+                               gravity_exponent: float = 2.0, G_constant: float = 1.0,
+                               K_capacity: float = 200.0, a_attack: float = 0.02, h_handling: float = 0.4,
+                               e_efficiency: float = 0.6, m_mortality: float = 0.3,
+                               R0: float = 50.0, P0: float = 10.0) -> dict:
+    """Simulacion de dinamicas socio-demograficas arqueologicas: malthusian_growth
+    (crecimiento logistico con capacidad de carga variable por ciclos climaticos),
+    technology_diffusion (modelo de Bass de adopcion de innovaciones, solucion
+    analitica cerrada), trade_network (modelo gravitacional de rutas comerciales
+    entre asentamientos, identifica el hub por centralidad de autovector),
+    collapse_dynamics (ciclo auge-colapso poblacion/recursos tipo
+    Rosenzweig-MacArthur, analogo a los secular cycles de Turchin)."""
+    return compute_archaeological_simulation(mode, r, K0, K_amplitude, K_period, x0, t_max, n_points,
+                                              p_innovation, q_imitation, M_market, settlements,
+                                              gravity_exponent, G_constant, K_capacity, a_attack,
+                                              h_handling, e_efficiency, m_mortality, R0, P0)
 
 
 @mcp.tool()
