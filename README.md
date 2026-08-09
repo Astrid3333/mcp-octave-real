@@ -5,7 +5,7 @@ de herramientas de cómputo numérico, matemática histórica/etnomatemática,
 sistemas dinámicos y matemática pura/aplicada como tools invocables desde
 Claude Desktop.
 
-Construido con [FastMCP](https://github.com/jlowin/fastmcp). 29 tools.
+Construido con [FastMCP](https://github.com/jlowin/fastmcp). 88 tools.
 
 ## Qué hace
 
@@ -78,6 +78,33 @@ Se agrupan en cinco grandes áreas:
   intervalos justos vs. temperamento igual, serie armónica, escala de
   división ternaria de la octava (conexión con TritOS), análisis
   espectral real vía FFT en Octave.
+
+
+### Ingeniería, simulación y utilidades (agregado reciente)
+- **`budgeting_tool`** — presupuestos de construcción: costo directo de
+  partidas, análisis de precios unitarios.
+- **`construction_scheduling_tool`** — planificación de obra vía ruta
+  crítica (CPM): early/late start-finish, holguras.
+- **`earthworks_tool`** — movimiento de tierras a escala de trazado y
+  terreno: volumen entre secciones transversales.
+- **`finite_element_tool`** — método de elementos finitos: barra axial,
+  viga en voladizo Euler-Bernoulli.
+- **`structural_analysis_tool`** — análisis estructural preliminar:
+  reacciones, corte, momento y deflexión de vigas.
+- **`quantity_takeoff_tool`** — cubicaciones de construcción: volumen de
+  hormigón, área de encofrado, peso de acero.
+- **`multibody_dynamics_tool`** — dinámica de cuerpos rígidos y sistemas
+  multi-cuerpo (péndulo físico compuesto, entre otros).
+- **`particle_simulation_tool`** — simulación de partículas: órbita de
+  Kepler de dos cuerpos, colisiones.
+- **`ocas_symbolic_tool`** — álgebra simbólica y teoría de números vía
+  oCAS (motor Rust, más rápido que sympy para ciertos casos).
+- **`math_humanizer_tool`** — convierte conceptos matemáticos complejos en
+  explicaciones e historias accesibles.
+- **`lyapunov_tool_v2`** — segunda versión del cálculo de exponente de
+  Lyapunov máximo, con presets adicionales.
+- **`reaction_diffusion_tool_real`** — inestabilidad de Turing
+  (reacción-difusión linealizada): evalúa las condiciones de inestabilidad.
 
 ### Etnomatemática / matemática histórica
 - **`ethnomath_tool`** — maya_long_count, chinese_remainder, vedic_multiply,
