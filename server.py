@@ -43,6 +43,34 @@ from ancient_calculators_tool import compute_ancient_calculator
 from levant_tool import compute_levant
 from originarios_tool import compute_originarios
 from ancestral_octave_tool import compute_ancestral_octave
+from auto_differentiation_tool import compute_gradient_hessian as _compute_gradient_hessian, compute_jacobian as _compute_jacobian
+from math_error_analyzer_tool import compute_math_error_analysis
+from math_benchmark_tool import compute_math_benchmark
+from math_interpolation_tool import compute_math_interpolation
+from math_pipeline_builder_tool import run_math_pipeline as _run_math_pipeline
+from math_interpreter_tool import interpret_math_query as _interpret_math_query
+from math_visualization_tool import compute_math_visualization
+from math_explainer_tool import interpret_and_explain as _interpret_and_explain
+from machine_learning_math_tool import compute_machine_learning_math
+from financial_math_tool import compute_financial_math
+from game_theory_tool import compute_game_theory
+from tensor_calculus_tool import compute_tensor_calculus
+from network_science_tool import compute_network_science
+from population_genetics_tool import compute_population_genetics
+from wavelet_tool import compute_wavelet
+from percolation_theory_tool import compute_percolation_theory
+from chemometrics_tool import compute_chemometrics
+from econometrics_tool import compute_econometrics
+from stochastic_processes_tool import compute_stochastic_processes
+from information_theory_tool import compute_information_theory
+from control_theory_tool import compute_control_theory
+from optimal_control_tool import compute_optimal_control
+from spatial_statistics_tool import compute_spatial_statistics
+from text_analysis_math_tool import compute_text_analysis_math
+from archaeoastronomy_tool import compute_archaeoastronomy
+from quantum_information_tool import compute_quantum_information
+from paleography_tool import compute_paleography
+from abstract_algebra_tool import compute_abstract_algebra
 
 mcp = FastMCP(name="octave-mcp", instructions="Servidor MCP GNU Octave.")
 
@@ -632,6 +660,154 @@ def numeral_systems_embedding(method: str = "umap", extra_systems: list = None,
     despues con plot_workspace_run (plot_type=numeral_embedding)."""
     return compute_numeral_systems_embedding(method, extra_systems, n_neighbors,
                                               perplexity, random_state, run_id)
+
+
+# ==== Herramientas agregadas para paridad con octave-mcp (paso 2) ====
+
+@mcp.tool()
+def compute_gradient_hessian(expression: str, variables: str, order: int = 1) -> dict:
+    """Deriva simbolicamente (via sympy) el gradiente y, si order>=2, la matriz Hessiana de una expresion multivariable."""
+    return _compute_gradient_hessian(expression, variables, order)
+
+@mcp.tool()
+def compute_jacobian(expressions: str, variables: str) -> dict:
+    """Calcula la matriz Jacobiana simbolica de un sistema de 'expressions' (separadas por ;) respecto a 'variables'."""
+    return _compute_jacobian(expressions, variables)
+
+@mcp.tool()
+def math_error_analyzer(mode: str = "validate", params: dict = None) -> dict:
+    """Analisis de error numerico: numero de condicion, error de truncamiento vs redondeo, derivada analitica de referencia."""
+    return compute_math_error_analysis(mode, **(params or {}))
+
+@mcp.tool()
+def math_benchmark(mode: str = "validate", params: dict = None) -> dict:
+    """Benchmark de metodos numericos: comparacion de metodos ODE (Euler/RK2/RK4), cuadratura (trapezoidal/Simpson/Gauss-Legendre), y busqueda de raices (biseccion/Newton/secante)."""
+    return compute_math_benchmark(mode, **(params or {}))
+
+@mcp.tool()
+def math_interpolation(mode: str = "validate", params: dict = None) -> dict:
+    """Interpolacion numerica: Lagrange (baricentrica), splines cubicos naturales, comparacion de nodos (Chebyshev vs equiespaciados)."""
+    return compute_math_interpolation(mode, **(params or {}))
+
+@mcp.tool()
+def run_math_pipeline(steps: list = None, mode: str = "validate") -> dict:
+    """Ejecuta un pipeline de pasos encadenados entre distintas herramientas matematicas del servidor."""
+    return _run_math_pipeline(steps, mode)
+
+@mcp.tool()
+def math_interpreter(query: str, auto_run: bool = False) -> dict:
+    """Interpreta una consulta matematica en lenguaje natural (castellano) y la traduce a una llamada de herramienta."""
+    return _interpret_math_query(query, auto_run)
+
+@mcp.tool()
+def math_visualization(mode: str = "function_plot", params: dict = None) -> dict:
+    """Visualizacion matematica: graficos de funciones, retratos de fase, campos vectoriales, diagramas de bifurcacion."""
+    return compute_math_visualization(mode=mode, **(params or {}))
+
+@mcp.tool()
+def math_explainer(source_tool: str, result: dict, level: str = "tecnico") -> dict:
+    """Traduce el resultado crudo (dict) de otra herramienta matematica a una explicacion en lenguaje natural, con nivel tecnico ajustable."""
+    return _interpret_and_explain(source_tool, result, level)
+
+@mcp.tool()
+def machine_learning_math(mode: str, params: dict = None) -> dict:
+    """Matematica de machine learning: funciones de costo, descenso de gradiente, regresion lineal/logistica, comparacion de regularizacion (ridge/lasso), PCA."""
+    return compute_machine_learning_math(mode, **(params or {}))
+
+@mcp.tool()
+def financial_math(mode: str, params: dict = None) -> dict:
+    """Matematica financiera: Black-Scholes, griegas de opciones, VaR (parametrico/historico), valuacion de anualidades y bonos, riesgo catastrofico."""
+    return compute_financial_math(mode, **(params or {}))
+
+@mcp.tool()
+def game_theory(mode: str, params: dict = None) -> dict:
+    """Teoria de juegos: equilibrio de Nash, eliminacion de estrategias dominadas, valor de juegos de suma cero, valor de Shapley, nucleo cooperativo, dinamica evolutiva."""
+    return compute_game_theory(mode, **(params or {}))
+
+@mcp.tool()
+def tensor_calculus(mode: str, params: dict = None) -> dict:
+    """Calculo tensorial/geometria diferencial: simbolos de Christoffel, tensor de Riemann, Ricci, curvatura escalar, ecuaciones geodesicas (backend simbolico o numerico)."""
+    return compute_tensor_calculus(mode, **(params or {}))
+
+@mcp.tool()
+def network_science(mode: str, params: dict = None) -> dict:
+    """Ciencia de redes: centralidad, deteccion de comunidades (Louvain), modelos de crecimiento, metricas de grafos."""
+    return compute_network_science(mode, **(params or {}))
+
+@mcp.tool()
+def population_genetics(mode: str, params: dict = None) -> dict:
+    """Genetica de poblaciones: equilibrio de Hardy-Weinberg, deriva genetica (simulacion), seleccion natural, tiempo de coalescencia, distancia genetica (Fst)."""
+    return compute_population_genetics(mode, **(params or {}))
+
+@mcp.tool()
+def wavelet(mode: str, params: dict = None) -> dict:
+    """Analisis wavelet: transformada continua (CWT) y discreta (DWT), denoising, deteccion de transitorios."""
+    return compute_wavelet(mode, **(params or {}))
+
+@mcp.tool()
+def percolation_theory(mode: str, params: dict = None) -> dict:
+    """Teoria de percolacion: percolacion de sitios/enlaces en reticulas, umbral critico, percolacion sobre grafos."""
+    return compute_percolation_theory(mode, **(params or {}))
+
+@mcp.tool()
+def chemometrics(mode: str, params: dict = None) -> dict:
+    """Quimiometria: calibracion PLS y PCR, diseno de experimentos (factorial completo, Box-Behnken, hipercubo latino), validacion de recuperacion."""
+    return compute_chemometrics(mode, params or {})
+
+@mcp.tool()
+def econometrics(mode: str, params: dict = None) -> dict:
+    """Econometria: test ADF, forecast ARIMA, ajuste GARCH(1,1), cointegracion Engle-Granger, efectos fijos de panel, IV/2SLS, causalidad de Granger."""
+    return compute_econometrics(mode, params or {})
+
+@mcp.tool()
+def stochastic_processes(mode: str, params: dict = None) -> dict:
+    """Procesos estocasticos: movimiento browniano, proceso de Ornstein-Uhlenbeck, cadenas de Markov."""
+    return compute_stochastic_processes(mode, **(params or {}))
+
+@mcp.tool()
+def information_theory(mode: str, params: dict = None) -> dict:
+    """Teoria de la informacion: entropia de Shannon, divergencia KL, informacion mutua, entropia cruzada, entropia de secuencias."""
+    return compute_information_theory(mode, **(params or {}))
+
+@mcp.tool()
+def control_theory(mode: str, params: dict = None) -> dict:
+    """Teoria de control: respuesta PID a escalon, criterio de Routh-Hurwitz, lugar de raices, control caotico OGY."""
+    return compute_control_theory(mode, **(params or {}))
+
+@mcp.tool()
+def optimal_control(mode: str, params: dict = None) -> dict:
+    """Control optimo: regulador LQR, principio del maximo de Pontryagin (caso LQ), programacion dinamica."""
+    return compute_optimal_control(mode, **(params or {}))
+
+@mcp.tool()
+def spatial_statistics(mode: str, params: dict = None) -> dict:
+    """Estadistica espacial: I de Moran, C de Geary, semivariograma, interpolacion por kriging."""
+    return compute_spatial_statistics(mode, **(params or {}))
+
+@mcp.tool()
+def text_analysis_math(mode: str, params: dict = None) -> dict:
+    """Matematica del analisis de texto: distancia de edicion, modelos n-grama, leyes de frecuencia (Zipf), estilometria."""
+    return compute_text_analysis_math(mode, **(params or {}))
+
+@mcp.tool()
+def archaeoastronomy(mode: str, params: dict = None) -> dict:
+    """Calculos astronomicos para arqueoastronomia (algoritmos de Meeus): posicion solar/lunar, equinoccios/solsticios, verificacion de alineamientos arqueologicos."""
+    return compute_archaeoastronomy(mode, **(params or {}))
+
+@mcp.tool()
+def quantum_information(mode: str, params: dict = None) -> dict:
+    """Informacion cuantica: vector de Bloch, secuencias de compuertas, Deutsch-Jozsa, busqueda de Grover, entropia de entrelazamiento, codigo de correccion bit-flip."""
+    return compute_quantum_information(mode, **(params or {}))
+
+@mcp.tool()
+def paleography(mode: str = "validate", params: dict = None) -> dict:
+    """Tres motores cuantitativos de paleografia/codicologia: seriation (analisis de correspondencia via SVD), feature_dating_regression (estima fecha de documentos sin fecha), letterform_classification (nearest-centroid sobre rasgos normalizados)."""
+    return compute_paleography(mode, **(params or {}))
+
+@mcp.tool()
+def abstract_algebra(mode: str = "validate", params: dict = None) -> dict:
+    """Algebra abstracta sobre estructuras finitas chicas (orden<=8): tablas de Cayley, verificacion de axiomas de grupo/anillo/cuerpo, isomorfismos por fuerza bruta."""
+    return compute_abstract_algebra(mode, **(params or {}))
 
 if __name__ == "__main__":
     mcp.run()
