@@ -348,6 +348,7 @@ from lyapunov_tool_v2 import compute_lyapunov_exponent as compute_lyapunov_v2
 from reaction_diffusion_tool_real import compute_reaction_diffusion as compute_reaction_diffusion_real
 from composite_homogenization import compute_composite_homogenization
 from statistical_physics_tool import compute_statistical_physics
+from cfd_tool import compute_cfd
 
 
 @mcp.tool()
@@ -898,3 +899,9 @@ def composite_homogenization_tool(mode: str, params: dict = None) -> dict:
 def statistical_physics_tool(mode: str, params: dict = None) -> dict:
     """Fisica estadistica y sistemas complejos: modelo de Ising 2D via Monte Carlo Metropolis (magnetizacion, energia, calor especifico, estimacion de temperatura critica vs valor exacto de Onsager) y modelo de Potts de q estados para crecimiento de grano/microestructura (evolucion de numero de granos y area promedio en el tiempo). mode='ising_2d' o 'potts_grain_growth'."""
     return compute_statistical_physics(mode, **(params or {}))
+
+
+@mcp.tool()
+def cfd_tool(mode: str, params: dict = None) -> dict:
+    """CFD 2D laminar (sin modelos de turbulencia). mode='poiseuille_flow': flujo de Stokes entre placas paralelas, validado contra la solucion analitica de Hagen-Poiseuille. mode='lid_driven_cavity': Navier-Stokes 2D via formulacion vorticidad-funcion de corriente, cavidad con tapa movil, validado contra el benchmark de Ghia, Ghia & Shin (1982) en Re=100."""
+    return compute_cfd(mode, **(params or {}))
