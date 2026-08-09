@@ -350,6 +350,7 @@ from composite_homogenization import compute_composite_homogenization
 from statistical_physics_tool import compute_statistical_physics
 from cfd_tool import compute_cfd
 from statistics_extended_tool import compute_statistics_extended
+from glm_tool import compute_glm
 
 
 @mcp.tool()
@@ -912,3 +913,9 @@ def cfd_tool(mode: str, params: dict = None) -> dict:
 def statistics_extended_tool(mode: str, params: dict = None) -> dict:
     """Fase A de estadistica: descriptiva/EDA (descriptive_stats: media, mediana, moda, cuartiles, asimetria, curtosis, outliers IQR/z-score), tablas de contingencia con chi-cuadrado (contingency_table), tests de 2 muestras parametricos y no parametricos (two_sample_tests: ttest_ind, ttest_paired, mannwhitney, wilcoxon, ks_2samp), ANOVA de 1 via con post-hoc Bonferroni (anova_oneway), tests de normalidad (normality_tests: shapiro, jarque_bera), y remuestreo (resampling: bootstrap percentil/BCa, test de permutaciones). Validado cruzado contra scipy.stats."""
     return compute_statistics_extended(mode, params or {})
+
+
+@mcp.tool()
+def glm_tool(mode: str, params: dict = None) -> dict:
+    """Fase B de estadistica: modelos lineales generalizados y regresion regularizada. mode='logistic_regression': regresion logistica binaria via IRLS, devuelve coeficientes, odds ratios, errores estandar y p-values de Wald. mode='poisson_regression': GLM de conteos (link log) via IRLS, devuelve incidence rate ratios. mode='ridge_lasso': Ridge (solucion cerrada) o Lasso (coordinate descent), con seleccion de lambda via validacion cruzada k-fold; params incluye method='ridge'|'lasso'. Validado cruzado contra sklearn."""
+    return compute_glm(mode, params or {})
