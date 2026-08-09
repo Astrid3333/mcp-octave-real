@@ -346,6 +346,7 @@ from quantity_takeoff_tool import compute_quantity_takeoff
 from structural_analysis_tool import compute_structural_analysis
 from lyapunov_tool_v2 import compute_lyapunov_exponent as compute_lyapunov_v2
 from reaction_diffusion_tool_real import compute_reaction_diffusion as compute_reaction_diffusion_real
+from composite_homogenization import compute_composite_homogenization
 
 
 @mcp.tool()
@@ -884,3 +885,9 @@ def lyapunov_v2_tool(params: dict = None) -> dict:
 def reaction_diffusion_real_tool(params: dict = None) -> dict:
     """Inestabilidad de Turing (reaccion-difusion linealizada): evalua las 4 condiciones analiticas clasicas para un sistema de 2 especies."""
     return compute_reaction_diffusion_real(**(params or {}))
+
+
+@mcp.tool()
+def composite_homogenization_tool(mode: str, params: dict = None) -> dict:
+    """Propiedades efectivas de un material compuesto de 2 fases via reglas de mezcla Voigt (cota superior, iso-deformacion) y Reuss (cota inferior, iso-esfuerzo), derivadas simbolicamente con sympy. mode='elastic_modulus' o 'thermal_conductivity'. params: f1 (fraccion de volumen de fase 1), P1, P2 (propiedad de cada fase)."""
+    return compute_composite_homogenization(mode, **(params or {}))
