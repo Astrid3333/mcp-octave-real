@@ -28,6 +28,15 @@ Validacion por submodo:
   population_dynamics_tool -- el sistema puede oscilar en un ciclo limite
   en vez de converger puntualmente, "paradoja del enriquecimiento").
 
+  Umbral de bifurcacion (con los parametros default a=0.02, h=0.4, e=0.6,
+  m=0.3, r=0.5): via barrido numerico (bisection sobre integracion larga,
+  t_max=500) el sistema converge a punto fijo para K<163 y entra en ciclo
+  limite permanente para K>165 (transicion entre K~163-165). La formula
+  analitica clasica de Hopf para RM tipo II (K_crit=R*(1+ahR*)/(ahR*-1))
+  NO aplica aca porque requiere a*h*R*>1 y con estos parametros
+  a*h*R*=0.02*0.4*31.25=0.25<1 -- por eso el umbral reportado es
+  puramente numerico (bisection), no una expresion cerrada verificada.
+
 NOTA HONESTA: estos son modelos estilizados de uso estandar en arqueologia
 computacional/demografia historica (crecimiento con capacidad de carga
 variable, Bass para adopcion de tecnologias como ceramica o metalurgia,
