@@ -5,7 +5,7 @@ de herramientas de cómputo numérico, matemática histórica/etnomatemática,
 sistemas dinámicos y matemática pura/aplicada como tools invocables desde
 Claude Desktop.
 
-Construido con [FastMCP](https://github.com/jlowin/fastmcp). 88 tools.
+Construido con [FastMCP](https://github.com/jlowin/fastmcp). 91 tools.
 
 ## Qué hace
 
@@ -105,6 +105,34 @@ Se agrupan en cinco grandes áreas:
   Lyapunov máximo, con presets adicionales.
 - **`reaction_diffusion_tool_real`** — inestabilidad de Turing
   (reacción-difusión linealizada): evalúa las condiciones de inestabilidad.
+
+
+### Fases 1-3: materiales, física estadística y CFD (roadmap completo)
+- **`finite_element_tool`** (extendido) — se sumaron 4 modos nuevos de
+  análisis térmico y de esfuerzos, además de los 3 modos estructurales
+  originales: `thermal_steady_1d`, `thermal_transient_1d` (conducción de
+  calor 1D/2D, validado contra serie de Fourier para el caso transitorio),
+  `thermal_steady_2d`, y `stress_analysis` (plane stress/plane strain,
+  validado contra el caso de Kirsch — placa con agujero, concentración de
+  esfuerzos).
+- **`composite_homogenization_tool`** — propiedades efectivas de un material
+  compuesto de 2 fases vía reglas de mezcla Voigt (cota superior,
+  iso-deformación) y Reuss (cota inferior, iso-esfuerzo), derivadas
+  simbólicamente con sympy vía `ocas_symbolic_tool`. Modos:
+  `elastic_modulus`, `thermal_conductivity`.
+- **`statistical_physics_tool`** — física estadística y sistemas complejos:
+  modelo de Ising 2D vía Monte Carlo Metropolis (magnetización, energía,
+  calor específico, estimación de temperatura crítica vs. valor exacto de
+  Onsager) y modelo de Potts de q estados para crecimiento de
+  grano/microestructura (evolución de número de granos y área promedio en
+  el tiempo). Modos: `ising_2d`, `potts_grain_growth`.
+- **`cfd_tool`** — dinámica de fluidos computacional 2D laminar (sin
+  modelos de turbulencia): `poiseuille_flow` (flujo de Stokes entre placas
+  paralelas, validado contra la solución analítica exacta de
+  Hagen-Poiseuille) y `lid_driven_cavity` (Navier-Stokes 2D vía
+  formulación vorticidad-función de corriente, cavidad con tapa móvil,
+  validado contra el benchmark clásico de Ghia, Ghia & Shin 1982, Re=100,
+  error máximo 0.0056 en la línea central).
 
 ### Etnomatemática / matemática histórica
 - **`ethnomath_tool`** — maya_long_count, chinese_remainder, vedic_multiply,
