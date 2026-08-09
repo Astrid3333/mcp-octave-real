@@ -349,6 +349,7 @@ from reaction_diffusion_tool_real import compute_reaction_diffusion as compute_r
 from composite_homogenization import compute_composite_homogenization
 from statistical_physics_tool import compute_statistical_physics
 from cfd_tool import compute_cfd
+from statistics_extended_tool import compute_statistics_extended
 
 
 @mcp.tool()
@@ -905,3 +906,9 @@ def statistical_physics_tool(mode: str, params: dict = None) -> dict:
 def cfd_tool(mode: str, params: dict = None) -> dict:
     """CFD 2D laminar (sin modelos de turbulencia). mode='poiseuille_flow': flujo de Stokes entre placas paralelas, validado contra la solucion analitica de Hagen-Poiseuille. mode='lid_driven_cavity': Navier-Stokes 2D via formulacion vorticidad-funcion de corriente, cavidad con tapa movil, validado contra el benchmark de Ghia, Ghia & Shin (1982) en Re=100."""
     return compute_cfd(mode, **(params or {}))
+
+
+@mcp.tool()
+def statistics_extended_tool(mode: str, params: dict = None) -> dict:
+    """Fase A de estadistica: descriptiva/EDA (descriptive_stats: media, mediana, moda, cuartiles, asimetria, curtosis, outliers IQR/z-score), tablas de contingencia con chi-cuadrado (contingency_table), tests de 2 muestras parametricos y no parametricos (two_sample_tests: ttest_ind, ttest_paired, mannwhitney, wilcoxon, ks_2samp), ANOVA de 1 via con post-hoc Bonferroni (anova_oneway), tests de normalidad (normality_tests: shapiro, jarque_bera), y remuestreo (resampling: bootstrap percentil/BCa, test de permutaciones). Validado cruzado contra scipy.stats."""
+    return compute_statistics_extended(mode, params or {})
