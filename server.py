@@ -347,6 +347,7 @@ from structural_analysis_tool import compute_structural_analysis
 from lyapunov_tool_v2 import compute_lyapunov_exponent as compute_lyapunov_v2
 from reaction_diffusion_tool_real import compute_reaction_diffusion as compute_reaction_diffusion_real
 from composite_homogenization import compute_composite_homogenization
+from statistical_physics_tool import compute_statistical_physics
 
 
 @mcp.tool()
@@ -891,3 +892,9 @@ def reaction_diffusion_real_tool(params: dict = None) -> dict:
 def composite_homogenization_tool(mode: str, params: dict = None) -> dict:
     """Propiedades efectivas de un material compuesto de 2 fases via reglas de mezcla Voigt (cota superior, iso-deformacion) y Reuss (cota inferior, iso-esfuerzo), derivadas simbolicamente con sympy. mode='elastic_modulus' o 'thermal_conductivity'. params: f1 (fraccion de volumen de fase 1), P1, P2 (propiedad de cada fase)."""
     return compute_composite_homogenization(mode, **(params or {}))
+
+
+@mcp.tool()
+def statistical_physics_tool(mode: str, params: dict = None) -> dict:
+    """Fisica estadistica y sistemas complejos: modelo de Ising 2D via Monte Carlo Metropolis (magnetizacion, energia, calor especifico, estimacion de temperatura critica vs valor exacto de Onsager) y modelo de Potts de q estados para crecimiento de grano/microestructura (evolucion de numero de granos y area promedio en el tiempo). mode='ising_2d' o 'potts_grain_growth'."""
+    return compute_statistical_physics(mode, **(params or {}))
