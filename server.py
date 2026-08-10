@@ -351,6 +351,7 @@ from statistical_physics_tool import compute_statistical_physics
 from cfd_tool import compute_cfd
 from statistics_extended_tool import compute_statistics_extended
 from glm_tool import compute_glm
+from clustering_tool import compute_clustering
 
 
 @mcp.tool()
@@ -919,3 +920,9 @@ def statistics_extended_tool(mode: str, params: dict = None) -> dict:
 def glm_tool(mode: str, params: dict = None) -> dict:
     """Fase B de estadistica: modelos lineales generalizados y regresion regularizada. mode='logistic_regression': regresion logistica binaria via IRLS, devuelve coeficientes, odds ratios, errores estandar y p-values de Wald. mode='poisson_regression': GLM de conteos (link log) via IRLS, devuelve incidence rate ratios. mode='ridge_lasso': Ridge (solucion cerrada) o Lasso (coordinate descent), con seleccion de lambda via validacion cruzada k-fold; params incluye method='ridge'|'lasso'. Validado cruzado contra sklearn."""
     return compute_glm(mode, params or {})
+
+
+@mcp.tool()
+def clustering_tool(mode: str, params: dict = None) -> dict:
+    """Fase C de estadistica: clustering y reduccion de dimensionalidad. mode='kmeans': K-means con inicializacion k-means++, devuelve labels, centroides, inertia, silhouette_score y davies_bouldin_score (params: X, k, n_init, max_iter, random_state). mode='hierarchical': clustering jerarquico via scipy (linkage single/complete/average), devuelve matriz de linkage y orden de dendrograma para math_visualization_tool; si se pasa n_clusters tambien devuelve la asignacion de clusters por corte (params: X, linkage, n_clusters). mode='pca_extended': extiende el PCA de linear_algebra_tool con biplot completo — scores, loadings y contribucion porcentual de cada variable por componente (params: X, n_components, standardize, feature_names). Validado cruzado contra sklearn (KMeans, AgglomerativeClustering via adjusted_rand_score, PCA)."""
+    return compute_clustering(mode, **(params or {}))
