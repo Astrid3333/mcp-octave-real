@@ -352,6 +352,7 @@ from cfd_tool import compute_cfd
 from statistics_extended_tool import compute_statistics_extended
 from glm_tool import compute_glm
 from clustering_tool import compute_clustering
+from mcdm_tool import compute_mcdm
 
 
 @mcp.tool()
@@ -926,3 +927,9 @@ def glm_tool(mode: str, params: dict = None) -> dict:
 def clustering_tool(mode: str, params: dict = None) -> dict:
     """Fase C de estadistica: clustering y reduccion de dimensionalidad. mode='kmeans': K-means con inicializacion k-means++, devuelve labels, centroides, inertia, silhouette_score y davies_bouldin_score (params: X, k, n_init, max_iter, random_state). mode='hierarchical': clustering jerarquico via scipy (linkage single/complete/average), devuelve matriz de linkage y orden de dendrograma para math_visualization_tool; si se pasa n_clusters tambien devuelve la asignacion de clusters por corte (params: X, linkage, n_clusters). mode='pca_extended': extiende el PCA de linear_algebra_tool con biplot completo — scores, loadings y contribucion porcentual de cada variable por componente (params: X, n_components, standardize, feature_names). Validado cruzado contra sklearn (KMeans, AgglomerativeClustering via adjusted_rand_score, PCA)."""
     return compute_clustering(mode, **(params or {}))
+
+
+@mcp.tool()
+def mcdm_tool(mode: str, params: dict = None) -> dict:
+    """Decision multicriterio: AHP (ponderacion de criterios via matriz de comparacion pareada, con ratio de consistencia de Saaty), TOPSIS (ranking de alternativas por cercania a los ideales positivo/negativo), y weighted_sum (WSM/WPM: suma o producto ponderado con normalizacion min-max, params incluye method='sum'|'product'). params: pairwise_matrix/criteria_names (ahp); decision_matrix, weights, criteria_types, alternative_names (topsis/weighted_sum)."""
+    return compute_mcdm(mode, **(params or {}))
