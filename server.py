@@ -355,6 +355,7 @@ from clustering_tool import compute_clustering
 from mcdm_tool import compute_mcdm
 from octave_syntax_tool import compute_octave_syntax
 from llm_math_bridge_tool import compute_llm_math_bridge
+from polarization_mapping_tool import compute_polarization_mapping
 
 
 @mcp.tool()
@@ -947,3 +948,9 @@ def octave_syntax_tool(mode: str, params: dict = None) -> dict:
 def llm_math_bridge_tool(mode: str = "auto", params: dict = None) -> dict:
     """Puente con un LLM real (Anthropic API) para el pipeline matematico. mode='interpret': decide que tool y parametros usar dada una consulta en lenguaje natural (params: query). mode='explain': explica en espanol un resultado ya calculado (params: tool_name, result, query opcional). mode='orchestrate': encadena varios tools segun haga falta (params: query, max_steps opcional). mode='auto' (default): decide heuristicamente entre las anteriores segun la dificultad de la consulta (params: query, max_steps opcional). Requiere ANTHROPIC_API_KEY en el entorno; sin ella devuelve {"error": ...} en vez de fallar."""
     return compute_llm_math_bridge(mode, **(params or {}))
+
+
+@mcp.tool()
+def polarization_mapping_tool(mode: str = "map_sequence", params: dict = None) -> dict:
+    """Mapea secuencias de ADN a vectores de Stokes [S0,S1,S2,S3], generalizando spin_complex (S1=purina/pirimidina, S2=puente H) y agregando S3 (marco de lectura, posicion mod 3). Primer paso del pipeline hacia optical_sequence_id. mode='map_sequence': mapea una secuencia (params: seq). mode='validate_purine_pyrimidine'/'validate_hydrogen_bond'/'validate_periodicity'(params: repeats opcional, default 30)/'validate_all': corren los controles sinteticos de validacion. Devuelve dict serializable; errores como {"error": ...} sin excepcion."""
+    return compute_polarization_mapping(mode, **(params or {}))
