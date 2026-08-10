@@ -5,7 +5,7 @@ de herramientas de cómputo numérico, matemática histórica/etnomatemática,
 sistemas dinámicos y matemática pura/aplicada como tools invocables desde
 Claude Desktop.
 
-Construido con [FastMCP](https://github.com/jlowin/fastmcp). 91 tools.
+Construido con [FastMCP](https://github.com/jlowin/fastmcp). 96 tools.
 
 ## Qué hace
 
@@ -133,6 +133,29 @@ Se agrupan en cinco grandes áreas:
   formulación vorticidad-función de corriente, cavidad con tapa móvil,
   validado contra el benchmark clásico de Ghia, Ghia & Shin 1982, Re=100,
   error máximo 0.0056 en la línea central).
+
+
+### Fases A-D: estadística avanzada, ML y muestreo (roadmap completo)
+- **`statistics_extended_tool`** — EDA descriptiva (media, mediana, moda,
+  cuartiles, asimetría, curtosis, outliers IQR/z-score), tablas de
+  contingencia con chi-cuadrado, tests de 2 muestras paramétricos y no
+  paramétricos (ttest_ind, ttest_paired, mannwhitney, wilcoxon, ks_2samp),
+  ANOVA de 1 vía con post-hoc Bonferroni, tests de normalidad (shapiro,
+  jarque_bera), y remuestreo (bootstrap percentil/BCa, test de
+  permutaciones). Validado cruzado contra scipy.stats.
+- **`glm_tool`** — modelos lineales generalizados y regresión regularizada:
+  regresión logística binaria vía IRLS, regresión de Poisson (link log) vía
+  IRLS, y Ridge/Lasso con selección de lambda vía validación cruzada
+  k-fold. Validado cruzado contra sklearn.
+- **`clustering_tool`** — clustering y reducción de dimensionalidad: K-means
+  con inicialización k-means++ (inertia, silhouette, Davies-Bouldin),
+  clustering jerárquico vía scipy (linkage single/complete/average), y PCA
+  extendido (varianza explicada). Validado cruzado contra sklearn.
+- **`stochastic_processes`** (extendido) — se sumó el modo `mcmc`:
+  Metropolis-Hastings genérico con propuesta random-walk gaussiana sobre un
+  target gaussiano o una densidad custom vía expresión sympy, devuelve
+  media/covarianza posterior, acceptance rate y effective sample size
+  (vía tiempo de autocorrelación integrado).
 
 ### Etnomatemática / matemática histórica
 - **`ethnomath_tool`** — maya_long_count, chinese_remainder, vedic_multiply,
