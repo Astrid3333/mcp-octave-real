@@ -24,14 +24,127 @@ try:
 except ImportError:
     NUMBA_AVAILABLE = False
 
+try:
+    from opencl_utils import OPENCL_AVAILABLE, get_opencl_context, opencl_device_info
+except ImportError:
+    OPENCL_AVAILABLE = False
+
+    def opencl_device_info():
+        return None
+
+_ISING_CL_KERNEL_SOURCE = """
+inline float _xorshift_float(uint *state) {
+    uint x = *state;
+    x ^= x << 13;
+    x ^= x >> 17;
+    x ^= x << 5;
+    *state = x;
+    return (x & 0x00FFFFFF) / (float)0x01000000;  // uniforme en [0,1)
+}
+
+__kernel void ising_checkerboard_update(
+    __global int *spins,
+    const int n,
+    const int parity,
+    const float beta,
+    const uint seed,
+    const uint sweep_id)
+{
+    int gid = get_global_id(0);
+    int i = gid / n;
+    int j = gid % n;
+    if (i >= n) return;
+    if ((i + j) % 2 != parity) return;
+
+    int s = spins[i * n + j];
+    int up    = spins[((i - 1 + n) % n) * n + j];
+    int down  = spins[((i + 1) % n) * n + j];
+    int left  = spins[i * n + ((j - 1 + n) % n)];
+    int right = spins[i * n + ((j + 1) % n)];
+    int neighbors = up + down + left + right;
+    int dE = 2 * s * neighbors;
+
+    // seed independiente por celda + sweep + color, no correlacionada
+    // entre celdas vecinas (evita artefactos por RNGs correlacionados
+    // dentro de la misma pasada de checkerboard)
+    uint state = seed ^ ((uint)gid * 2654435761u) ^ ((uint)sweep_id * 40503u)
+                 ^ ((uint)parity * 97u);
+    _xorshift_float(&state);
+    _xorshift_float(&state);
+    float r = _xorshift_float(&state);
+
+    if (dE <= 0 || r < exp(-beta * (float)dE)) {
+        spins[i * n + j] = -s;
+    }
+}
+"""
+
+_ISING_CL_PROGRAM_CACHE = {}
+_ISING_CL_KERNEL_CACHE = {}
+
+
+def _get_ising_cl_program(ctx):
+    key = id(ctx)
+    if key not in _ISING_CL_PROGRAM_CACHE:
+        import pyopencl as cl
+        _ISING_CL_PROGRAM_CACHE[key] = cl.Program(ctx, _ISING_CL_KERNEL_SOURCE).build()
+    return _ISING_CL_PROGRAM_CACHE[key]
+
+
+def _get_ising_cl_kernel(ctx):
+    """
+    Objeto cl.Kernel cacheado por contexto. Reutilizarlo (en vez de
+    resolver program.<nombre_kernel> por atributo en cada llamada) evita
+    el warning RepeatedKernelRetrieval de pyopencl y el overhead de crear
+    un Kernel nuevo miles de veces por corrida.
+    """
+    key = id(ctx)
+    if key not in _ISING_CL_KERNEL_CACHE:
+        import pyopencl as cl
+        program = _get_ising_cl_program(ctx)
+        _ISING_CL_KERNEL_CACHE[key] = cl.Kernel(program, "ising_checkerboard_update")
+    return _ISING_CL_KERNEL_CACHE[key]
+
+
+def _ising_opencl_sweep(spins, beta, n, seed, sweep_id):
+    """
+    Un sweep completo (ambos colores del tablero de ajedrez) via kernel
+    OpenCL. Ver docstring del modulo (o del patch que agrego esto) para la
+    diferencia algoritmica con los backends numpy/numba -- no son
+    trayectoria-equivalentes, solo equilibrio-equivalentes.
+    """
+    import pyopencl as cl
+    import numpy as np
+
+    ctx, queue = get_opencl_context()
+    kernel = _get_ising_cl_kernel(ctx)
+
+    spins_i32 = np.ascontiguousarray(spins, dtype=np.int32)
+    mf = cl.mem_flags
+    spins_buf = cl.Buffer(ctx, mf.READ_WRITE | mf.COPY_HOST_PTR, hostbuf=spins_i32)
+
+    global_size = (n * n,)
+    for parity in (0, 1):
+        kernel.set_args(
+            spins_buf, np.int32(n), np.int32(parity), np.float32(beta),
+            np.uint32(seed), np.uint32(sweep_id),
+        )
+        cl.enqueue_nd_range_kernel(queue, kernel, global_size, None)
+    cl.enqueue_copy(queue, spins_i32, spins_buf)
+    queue.finish()
+    return spins_i32.astype(np.int64)
+
+
 STATISTICAL_PHYSICS_TOOL_SCHEMA = {
     "name": "statistical_physics_tool",
     "description": (
         "Fisica estadistica: modelo de Ising 2D via Monte Carlo Metropolis "
         "(magnetizacion, energia, calor especifico, transicion de fase; "
-        "params.backend='numpy' (default) o 'numba' si esta instalado, "
-        "para acelerar el sweep), y modelo de Potts para crecimiento de "
-        "grano (microestructura)."
+        "params.backend='numpy' (default), 'numba' si esta instalado, u "
+        "'opencl' si hay pyopencl+GPU (usa checkerboard/red-black paralelo, "
+        "equilibrio-equivalente pero no trayectoria-equivalente a los otros "
+        "backends), para acelerar el sweep), y modelo de Potts para "
+        "crecimiento de grano (microestructura)."
     ),
     "inputSchema": {
         "type": "object",
@@ -86,6 +199,17 @@ if NUMBA_AVAILABLE:
                 spins[i, j] = -s
         return spins
 
+    @njit(cache=True)
+    def _seed_numba_rng(seed):
+        """
+        Siembra el generador interno de numba usado por np.random.* dentro
+        de funciones @njit. IMPORTANTE: llamar a np.random.seed(seed) desde
+        Python normal (fuera de una funcion jiteada) NO afecta este estado
+        -- numba mantiene su propio generador separado del de numpy. Esta
+        funcion es la unica forma correcta de sembrarlo.
+        """
+        np.random.seed(seed)
+
 
 def ising_2d(n=16, temperatures=None, n_equil=200, n_measure=200, seed=0, backend="numpy"):
     """
@@ -99,13 +223,21 @@ def ising_2d(n=16, temperatures=None, n_equil=200, n_measure=200, seed=0, backen
         instalado; si no lo esta, levanta ValueError con un mensaje claro
         en lugar de fallar con un ImportError crudo.
     """
-    if backend not in ("numpy", "numba"):
-        raise ValueError(f"backend desconocido: {backend!r}. Use 'numpy' o 'numba'")
+    if backend not in ("numpy", "numba", "opencl"):
+        raise ValueError(f"backend desconocido: {backend!r}. Use 'numpy', 'numba' u 'opencl'")
     if backend == "numba" and not NUMBA_AVAILABLE:
         raise ValueError(
             "backend='numba' pedido pero numba no esta instalado en este entorno. "
             "Instalar con: pip install numba --break-system-packages, "
             "o usar backend='numpy' (default)."
+        )
+    if backend == "opencl" and not OPENCL_AVAILABLE:
+        raise ValueError(
+            "backend='opencl' pedido pero no hay pyopencl + dispositivo OpenCL "
+            "disponible en este entorno (no instalado, sin GPU, o sin ICD "
+            "configurado). Instalar con: pip install pyopencl --break-system-packages "
+            "(requiere ademas los drivers/ICD del fabricante de la GPU), "
+            "o usar backend='numpy' (default) / 'numba'."
         )
 
     if temperatures is None:
@@ -113,7 +245,8 @@ def ising_2d(n=16, temperatures=None, n_equil=200, n_measure=200, seed=0, backen
     results = []
 
     if backend == "numba":
-        np.random.seed(seed)
+        np.random.seed(seed)  # siembra numpy puro (usado por np.random.choice abajo)
+        _seed_numba_rng(seed)  # siembra el generador interno de numba (usado dentro de los sweeps)
         spins = np.random.choice(np.array([-1, 1]), size=(n, n)).astype(np.int64)
         for T in temperatures:
             beta = 1.0 / T
@@ -122,6 +255,30 @@ def ising_2d(n=16, temperatures=None, n_equil=200, n_measure=200, seed=0, backen
             mags, energies = [], []
             for _ in range(n_measure):
                 spins = _ising_metropolis_sweep_numba(spins, beta, n)
+                mags.append(np.abs(np.mean(spins)))
+                energies.append(_ising_energy(spins) / (n * n))
+            mags = np.array(mags)
+            energies = np.array(energies)
+            specific_heat = (np.var(energies) * (n * n)) / (T ** 2)
+            results.append({
+                "T": T,
+                "magnetization": float(np.mean(mags)),
+                "energy_per_site": float(np.mean(energies)),
+                "specific_heat": float(specific_heat),
+            })
+    elif backend == "opencl":
+        np.random.seed(seed)
+        spins = np.random.choice(np.array([-1, 1]), size=(n, n)).astype(np.int64)
+        sweep_counter = 0
+        for T in temperatures:
+            beta = 1.0 / T
+            for _ in range(n_equil):
+                spins = _ising_opencl_sweep(spins, beta, n, seed, sweep_counter)
+                sweep_counter += 1
+            mags, energies = [], []
+            for _ in range(n_measure):
+                spins = _ising_opencl_sweep(spins, beta, n, seed, sweep_counter)
+                sweep_counter += 1
                 mags.append(np.abs(np.mean(spins)))
                 energies.append(_ising_energy(spins) / (n * n))
             mags = np.array(mags)
@@ -160,6 +317,7 @@ def ising_2d(n=16, temperatures=None, n_equil=200, n_measure=200, seed=0, backen
         "mode": "ising_2d",
         "n": n,
         "backend": backend,
+        "opencl_device": opencl_device_info() if backend == "opencl" else None,
         "results": results,
         "T_critical_estimate": T_peak,
         "T_critical_onsager": 2.0 / np.log(1 + np.sqrt(2)),
