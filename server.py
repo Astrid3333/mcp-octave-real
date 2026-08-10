@@ -353,6 +353,7 @@ from statistics_extended_tool import compute_statistics_extended
 from glm_tool import compute_glm
 from clustering_tool import compute_clustering
 from mcdm_tool import compute_mcdm
+from octave_syntax_tool import compute_octave_syntax
 
 
 @mcp.tool()
@@ -933,3 +934,9 @@ def clustering_tool(mode: str, params: dict = None) -> dict:
 def mcdm_tool(mode: str, params: dict = None) -> dict:
     """Decision multicriterio: AHP (ponderacion de criterios via matriz de comparacion pareada, con ratio de consistencia de Saaty), TOPSIS (ranking de alternativas por cercania a los ideales positivo/negativo), y weighted_sum (WSM/WPM: suma o producto ponderado con normalizacion min-max, params incluye method='sum'|'product'). params: pairwise_matrix/criteria_names (ahp); decision_matrix, weights, criteria_types, alternative_names (topsis/weighted_sum)."""
     return compute_mcdm(mode, **(params or {}))
+
+
+@mcp.tool()
+def octave_syntax_tool(mode: str, params: dict = None) -> dict:
+    """Valida la sintaxis de un fragmento de codigo Octave sin ejecutarlo: envuelve el codigo en una definicion de funcion y la carga via source(), lo que fuerza a Octave a parsear el cuerpo completo (detectando parentesis sin cerrar, 'end'/'endfor'/'endif' faltantes o mal anidados, tokens invalidos, etc.) sin correr ninguna linea del codigo del usuario. mode='syntax_check'. params: code (el fragmento a validar), timeout (segundos, default 10). Devuelve valid=true/false y, si hay error, el mensaje crudo de Octave y la linea detectada."""
+    return compute_octave_syntax(mode, **(params or {}))
