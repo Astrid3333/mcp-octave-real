@@ -354,6 +354,7 @@ from glm_tool import compute_glm
 from clustering_tool import compute_clustering
 from mcdm_tool import compute_mcdm
 from octave_syntax_tool import compute_octave_syntax
+from llm_math_bridge_tool import compute_llm_math_bridge
 
 
 @mcp.tool()
@@ -940,3 +941,9 @@ def mcdm_tool(mode: str, params: dict = None) -> dict:
 def octave_syntax_tool(mode: str, params: dict = None) -> dict:
     """Valida la sintaxis de un fragmento de codigo Octave sin ejecutarlo: envuelve el codigo en una definicion de funcion y la carga via source(), lo que fuerza a Octave a parsear el cuerpo completo (detectando parentesis sin cerrar, 'end'/'endfor'/'endif' faltantes o mal anidados, tokens invalidos, etc.) sin correr ninguna linea del codigo del usuario. mode='syntax_check'. params: code (el fragmento a validar), timeout (segundos, default 10). Devuelve valid=true/false y, si hay error, el mensaje crudo de Octave y la linea detectada."""
     return compute_octave_syntax(mode, **(params or {}))
+
+
+@mcp.tool()
+def llm_math_bridge_tool(mode: str = "auto", params: dict = None) -> dict:
+    """Puente con un LLM real (Anthropic API) para el pipeline matematico. mode='interpret': decide que tool y parametros usar dada una consulta en lenguaje natural (params: query). mode='explain': explica en espanol un resultado ya calculado (params: tool_name, result, query opcional). mode='orchestrate': encadena varios tools segun haga falta (params: query, max_steps opcional). mode='auto' (default): decide heuristicamente entre las anteriores segun la dificultad de la consulta (params: query, max_steps opcional). Requiere ANTHROPIC_API_KEY en el entorno; sin ella devuelve {"error": ...} en vez de fallar."""
+    return compute_llm_math_bridge(mode, **(params or {}))
