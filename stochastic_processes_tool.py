@@ -128,12 +128,126 @@ def compute_markov_chain(transition_matrix, initial_state=None, n_steps=20, targ
     return result
 
 
+
+def compute_mcmc(target, n_samples=5000, n_burn=1000, proposal_scale=0.5, x0=None, seed=None):
+    """
+    Metropolis-Hastings generico con propuesta random-walk gaussiana.
+
+    target: {"type": "gaussian", "mean": [...], "cov": [[...]]}
+         o  {"type": "custom", "log_density_expr": "expresion en x0,x1,...",
+             "variables": ["x0", "x1", ...]}
+    La expresion custom se parsea con sympy (no eval crudo), mismo criterio
+    que symbolic_tool/tensor_calculus_tool en el resto del repo.
+
+    Devuelve media/covarianza posterior, acceptance rate, effective sample
+    size (via tiempo de autocorrelacion integrado) y una traza sub-muestreada
+    apta para math_visualization_tool.
+    """
+    ttype = target.get("type")
+
+    if ttype == "gaussian":
+        mean = np.array(target["mean"], dtype=float)
+        cov = np.array(target["cov"], dtype=float)
+        cov_inv = np.linalg.inv(cov)
+        dim = len(mean)
+
+        def log_density(x):
+            d = x - mean
+            return -0.5 * float(d @ cov_inv @ d)
+
+    elif ttype == "custom":
+        import sympy as sp
+        variables = target["variables"]
+        syms = sp.symbols(variables)
+        if not isinstance(syms, (list, tuple)):
+            syms = (syms,)
+        expr = sp.sympify(target["log_density_expr"])
+        f = sp.lambdify(syms, expr, "numpy")
+        dim = len(variables)
+
+        def log_density(x):
+            return float(f(*x))
+
+    else:
+        raise ValueError(f"target.type desconocido: {ttype!r} (usar 'gaussian' o 'custom')")
+
+    rng = np.random.default_rng(seed)
+    x_curr = np.zeros(dim) if x0 is None else np.array(x0, dtype=float)
+
+    n_total = n_burn + n_samples
+    chain = np.zeros((n_total, dim))
+    chain[0] = x_curr
+    current_log_d = log_density(x_curr)
+    n_accept = 0
+
+    for i in range(1, n_total):
+        proposal = chain[i - 1] + rng.normal(0.0, proposal_scale, dim)
+        proposal_log_d = log_density(proposal)
+        log_alpha = proposal_log_d - current_log_d
+        if np.log(rng.uniform()) < log_alpha:
+            chain[i] = proposal
+            current_log_d = proposal_log_d
+            n_accept += 1
+        else:
+            chain[i] = chain[i - 1]
+
+    samples = chain[n_burn:]
+    acceptance_rate = n_accept / (n_total - 1)
+
+    posterior_mean = samples.mean(axis=0)
+    if dim > 1:
+        posterior_cov = np.cov(samples.T)
+        posterior_std = np.sqrt(np.diag(posterior_cov))
+    else:
+        posterior_cov = np.array([[samples.var()]])
+        posterior_std = np.array([samples.std()])
+
+    def integrated_autocorr_time(x, max_lag=None):
+        n = len(x)
+        if max_lag is None:
+            max_lag = min(n // 3, 1000)
+        xc = x - x.mean()
+        var = xc.var()
+        if var == 0:
+            return 1.0
+        acf = np.correlate(xc, xc, mode="full")[n - 1:] / (var * n)
+        tau = 1.0
+        for lag in range(1, max_lag):
+            if acf[lag] < 0.05:
+                break
+            tau += 2 * acf[lag]
+        return max(tau, 1.0)
+
+    taus = [integrated_autocorr_time(samples[:, d]) for d in range(dim)]
+    tau_mean = float(np.mean(taus))
+    ess = len(samples) / tau_mean
+
+    track_every = max(1, len(samples) // 500)
+    trace = samples[::track_every]
+
+    return {
+        "mode": "mcmc",
+        "target_type": ttype,
+        "dim": dim,
+        "n_samples": n_samples,
+        "n_burn": n_burn,
+        "acceptance_rate": round(float(acceptance_rate), 4),
+        "posterior_mean": [round(float(v), 6) for v in posterior_mean],
+        "posterior_std": [round(float(v), 6) for v in posterior_std],
+        "posterior_cov": [[round(float(v), 6) for v in row] for row in posterior_cov] if dim > 1 else None,
+        "integrated_autocorr_time": round(tau_mean, 4),
+        "effective_sample_size": round(float(ess), 2),
+        "trace": [[round(float(v), 6) for v in row] for row in trace],
+    }
+
+
 def compute_stochastic_processes(mode, **kwargs):
     """Dispatcher unico para el tool MCP stochastic_processes, segun 'mode'."""
     fns = {
         "brownian_motion": compute_brownian_motion,
         "ornstein_uhlenbeck": compute_ornstein_uhlenbeck,
         "markov_chain": compute_markov_chain,
+        "mcmc": compute_mcmc,
     }
     if mode not in fns:
         raise ValueError(f"mode desconocido: {mode}")
@@ -142,17 +256,19 @@ def compute_stochastic_processes(mode, **kwargs):
 
 STOCHASTIC_PROCESSES_TOOL_SCHEMA = {
     "name": "stochastic_processes",
-    "description": "Procesos estocasticos: movimiento browniano (estandar/con drift/geometrico), proceso de Ornstein-Uhlenbeck (reversion a la media, util para variables ambientales con equilibrio), y cadenas de Markov discretas (distribucion estacionaria, tiempo de primer paso).",
+    "description": "Procesos estocasticos: movimiento browniano (estandar/con drift/geometrico), proceso de Ornstein-Uhlenbeck (reversion a la media, util para variables ambientales con equilibrio), cadenas de Markov discretas (distribucion estacionaria, tiempo de primer paso), y mcmc (Metropolis-Hastings generico sobre una gaussiana o una densidad custom vía sympy).",
     "inputSchema": {
         "type": "object",
         "properties": {
-            "mode": {"type": "string", "enum": ["brownian_motion", "ornstein_uhlenbeck", "markov_chain"]},
+            "mode": {"type": "string", "enum": ["brownian_motion", "ornstein_uhlenbeck", "markov_chain", "mcmc"]},
             "T": {"type": "number"}, "n_steps": {"type": "integer"}, "n_paths": {"type": "integer"},
             "mu": {"type": "number"}, "sigma": {"type": "number"}, "x0": {"type": "number"},
             "kind": {"type": "string", "enum": ["standard", "geometric"]}, "seed": {"type": "integer"},
             "theta": {"type": "number"},
             "transition_matrix": {"type": "array"}, "initial_state": {"type": "integer"},
             "target_state": {"type": "integer"},
+            "target": {"type": "object"}, "n_samples": {"type": "integer"},
+            "n_burn": {"type": "integer"}, "proposal_scale": {"type": "number"},
         },
         "required": ["mode"],
     },
@@ -166,3 +282,25 @@ if __name__ == "__main__":
     print({k: v for k, v in r2.items() if k != "trajectory_mean"})
     r3 = compute_stochastic_processes(mode="markov_chain", transition_matrix=[[0.9, 0.1], [0.3, 0.7]], initial_state=0, n_steps=30, target_state=1)
     print(r3)
+
+    # mcmc: gaussiana 2D correlacionada, verificar contra media/cov exactos
+    r4 = compute_stochastic_processes(
+        mode="mcmc",
+        target={"type": "gaussian", "mean": [1.0, -2.0], "cov": [[1.0, 0.5], [0.5, 2.0]]},
+        n_samples=20000, n_burn=2000, proposal_scale=1.0, seed=42,
+    )
+    print("mcmc gaussian 2D: acceptance_rate=", r4["acceptance_rate"],
+          "posterior_mean=", r4["posterior_mean"], "(esperado ~[1.0, -2.0])",
+          "posterior_cov=", r4["posterior_cov"], "(esperado ~[[1.0,0.5],[0.5,2.0]])",
+          "ess=", r4["effective_sample_size"])
+
+    # mcmc: Laplace(mu=1, b=1) via expresion custom con Abs, verificar media/varianza exactas
+    r5 = compute_stochastic_processes(
+        mode="mcmc",
+        target={"type": "custom", "log_density_expr": "-Abs(x0 - 1)", "variables": ["x0"]},
+        n_samples=20000, n_burn=2000, proposal_scale=1.5, seed=42,
+    )
+    print("mcmc laplace custom: acceptance_rate=", r5["acceptance_rate"],
+          "posterior_mean=", r5["posterior_mean"], "(esperado ~1.0)",
+          "posterior_var=", [s ** 2 for s in r5["posterior_std"]], "(esperado ~2.0)",
+          "ess=", r5["effective_sample_size"])
