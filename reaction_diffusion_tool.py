@@ -88,8 +88,16 @@ def _eigvec_real(M, lam):
     return (1.0, 0.0)
 
 
+_VALID_REACTION_DIFFUSION_MODES = ("check_turing_instability", "simulate_growth_rate")
+
+
 def compute_reaction_diffusion(mode="check_turing_instability", a11=1.0, a12=-1.0,
                                 a21=2.0, a22=-1.5, Du=1.0, Dv=10.0):
+    if mode not in _VALID_REACTION_DIFFUSION_MODES:
+        return {
+            "error": f"mode desconocido: '{mode}'",
+            "modos_validos": list(_VALID_REACTION_DIFFUSION_MODES),
+        }
     trace = a11 + a22
     det = a11 * a22 - a12 * a21
     cond1 = trace < 0

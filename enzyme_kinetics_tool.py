@@ -54,8 +54,16 @@ def _run_octave(code, timeout=30):
     return r.stdout.strip(), None
 
 
+_VALID_ENZYME_KINETICS_MODES = ("full_kinetics", "michaelis_menten", "compare")
+
+
 def compute_enzyme_kinetics(mode="compare", k1=100.0, km1=10.0, k2=5.0,
                              E0=1.0, S0=100.0, t_max=5.0, n_points=50):
+    if mode not in _VALID_ENZYME_KINETICS_MODES:
+        return {
+            "error": f"mode desconocido: '{mode}'",
+            "modos_validos": list(_VALID_ENZYME_KINETICS_MODES),
+        }
     Vmax = k2 * E0
     Km = (km1 + k2) / k1
 
