@@ -322,6 +322,194 @@ def _mode_compare(seq_a: str, seq_b: str, mapping: str = "slit_1d",
 
 
 # ---------------------------------------------------------------------------
+# ---------------------------------------------------------------------------
+# Batch: parsing de FASTA / listas de secuencias
+# ---------------------------------------------------------------------------
+def _parse_batch_input(sequences=None, fasta=None) -> list[tuple[str, str]]:
+    """
+    Devuelve una lista de tuplas (id, seq) a partir de:
+      - `sequences`: lista de strings (secuencia cruda, se autogenera un id
+        "seq_1", "seq_2", ...) o lista de dicts {"id": ..., "seq": ...}
+      - `fasta`: texto crudo en formato FASTA (">id\nSEQ\n...", multilinea
+        por secuencia soportado)
+    Si se pasan ambos, se concatenan (fasta primero, despues sequences).
+    """
+    items: list[tuple[str, str]] = []
+
+    if fasta:
+        current_id = None
+        current_seq: list[str] = []
+        for raw_line in fasta.splitlines():
+            line = raw_line.strip()
+            if not line:
+                continue
+            if line.startswith(">"):
+                if current_id is not None:
+                    items.append((current_id, "".join(current_seq)))
+                current_id = line[1:].strip() or f"seq_{len(items) + 1}"
+                current_seq = []
+            else:
+                current_seq.append(line)
+        if current_id is not None:
+            items.append((current_id, "".join(current_seq)))
+
+    if sequences:
+        for s in sequences:
+            if isinstance(s, dict):
+                seq = s.get("seq", "")
+                sid = s.get("id") or f"seq_{len(items) + 1}"
+            else:
+                seq = s
+                sid = f"seq_{len(items) + 1}"
+            items.append((sid, seq))
+
+    if not items:
+        raise ValueError(
+            "batch requiere al menos uno de: `sequences` (lista de strings o "
+            "de {'id':..,'seq':..}), `fasta` (texto FASTA crudo)"
+        )
+    return items
+
+
+def _uniform_grid_size(apertures: list[np.ndarray], output_size: int) -> int:
+    """
+    Grilla de FFT comun para TODO el lote: el maximo entre output_size y la
+    dimension mas grande entre todas las aperturas del lote. Necesario para
+    que las intensidades resultantes tengan la misma forma y sean
+    comparables (matriz de correlacion, ranking, etc.) -- si cada secuencia
+    usara su propia grilla minima, secuencias de distinto largo caerian en
+    grillas de tamano distinto y no se podrian comparar pixel a pixel.
+    """
+    max_dim = output_size
+    for ap in apertures:
+        max_dim = max(max_dim, ap.shape[0], ap.shape[1])
+    return max_dim
+
+
+# ---------------------------------------------------------------------------
+# Modo: batch_generate
+# ---------------------------------------------------------------------------
+def _mode_batch_generate(mapping: str = "slit_1d", diffraction: str = "fraunhofer",
+                          sequences=None, fasta=None, **params) -> dict:
+    if mapping not in _VALID_MAPPINGS:
+        raise ValueError(f"mapping '{mapping}' no reconocido. Validos: {_VALID_MAPPINGS}")
+
+    items = _parse_batch_input(sequences, fasta)
+    output_size = int(params.get("output_size", 128))
+    hash_precision = int(params.get("hash_precision", 6))
+    top_k_peaks = int(params.get("top_k_peaks", 5))
+    include_pattern = bool(params.get("include_pattern", False))
+
+    # primera pasada: transmitancia + apertura por secuencia, para poder
+    # fijar una grilla comun antes de difractar
+    apertures = []
+    for sid, seq in items:
+        t = _get_transmittance_from_seq(seq)
+        apertures.append(_reshape_aperture(t, mapping))
+
+    grid = _uniform_grid_size(apertures, output_size)
+    diffract_params = dict(params)
+    diffract_params["output_size"] = grid
+
+    results = []
+    for (sid, seq), aperture2d in zip(items, apertures):
+        intensity = _diffract(aperture2d, diffraction, **diffract_params)
+        entry = {
+            "id": sid,
+            "sequence_length": len(seq),
+            "id_hash": _hash_intensity(intensity, hash_precision),
+            "signature": _vector_signature(intensity, top_k_peaks),
+        }
+        if include_pattern:
+            entry["intensity_pattern"] = intensity.tolist()
+        results.append(entry)
+
+    return {
+        "mode": "batch_generate",
+        "mapping": mapping,
+        "diffraction": diffraction,
+        "grid_size": grid,
+        "count": len(results),
+        "results": results,
+    }
+
+
+# ---------------------------------------------------------------------------
+# Modo: batch_compare
+# ---------------------------------------------------------------------------
+def _mode_batch_compare(mapping: str = "slit_1d", diffraction: str = "fraunhofer",
+                         sequences=None, fasta=None, query_seq=None,
+                         query_id: str = "query", **params) -> dict:
+    if mapping not in _VALID_MAPPINGS:
+        raise ValueError(f"mapping '{mapping}' no reconocido. Validos: {_VALID_MAPPINGS}")
+
+    items = _parse_batch_input(sequences, fasta)
+    output_size = int(params.get("output_size", 128))
+
+    all_items = list(items)
+    if query_seq is not None:
+        # la query va primero (indice 0) para poder aislar su fila despues
+        all_items = [(query_id, query_seq)] + all_items
+
+    apertures = []
+    for sid, seq in all_items:
+        t = _get_transmittance_from_seq(seq)
+        apertures.append(_reshape_aperture(t, mapping))
+
+    grid = _uniform_grid_size(apertures, output_size)
+    diffract_params = dict(params)
+    diffract_params["output_size"] = grid
+
+    intensities = [
+        _diffract(ap, diffraction, **diffract_params) for ap in apertures
+    ]
+    ids = [sid for sid, _ in all_items]
+
+    # matriz de correlacion vectorizada: una sola llamada a np.corrcoef sobre
+    # todos los patrones apilados, en vez de comparar par a par (esto ultimo
+    # seria O(K^2) llamadas a corrcoef individuales, mucho mas lento para
+    # lotes grandes).
+    flat = np.stack([iv.ravel() for iv in intensities])  # (K, P)
+    stds = flat.std(axis=1)
+    with np.errstate(invalid="ignore"):
+        corr_matrix = np.corrcoef(flat)  # (K, K)
+
+    # np.corrcoef da NaN para filas/columnas con std=0 (patron constante,
+    # deberia ser raro pero puede pasar con secuencias de largo 1). Se
+    # resuelve igual que en mode="compare": 1.0 si son identicas, 0.0 si no.
+    zero_std = np.where(stds == 0)[0]
+    for i in zero_std:
+        for j in range(len(intensities)):
+            same = np.allclose(flat[i], flat[j])
+            corr_matrix[i, j] = 1.0 if same else 0.0
+            corr_matrix[j, i] = corr_matrix[i, j]
+
+    if query_seq is not None:
+        query_row = corr_matrix[0, 1:].tolist()
+        ranked = sorted(
+            zip(ids[1:], query_row), key=lambda kv: kv[1], reverse=True
+        )
+        return {
+            "mode": "batch_compare",
+            "mapping": mapping,
+            "diffraction": diffraction,
+            "grid_size": grid,
+            "query_id": query_id,
+            "ranked_matches": [
+                {"id": sid, "pattern_correlation": corr} for sid, corr in ranked
+            ],
+        }
+
+    return {
+        "mode": "batch_compare",
+        "mapping": mapping,
+        "diffraction": diffraction,
+        "grid_size": grid,
+        "ids": ids,
+        "correlation_matrix": corr_matrix.tolist(),
+    }
+
+
 # Control sintetico A: conservacion de energia (teorema de Parseval)
 # ---------------------------------------------------------------------------
 def _mode_validate_energy_conservation(mapping: str = "folded_2d",
@@ -411,6 +599,25 @@ def compute_optical_sequence_id(mode: str = "generate", **params) -> dict:
             diffraction = params.pop("diffraction", "fraunhofer")
             return _mode_compare(seq_a, seq_b, mapping, diffraction, **params)
 
+        if mode == "batch_generate":
+            mapping = params.pop("mapping", "slit_1d")
+            diffraction = params.pop("diffraction", "fraunhofer")
+            sequences = params.pop("sequences", None)
+            fasta = params.pop("fasta", None)
+            return _mode_batch_generate(mapping, diffraction, sequences=sequences,
+                                         fasta=fasta, **params)
+
+        if mode == "batch_compare":
+            mapping = params.pop("mapping", "slit_1d")
+            diffraction = params.pop("diffraction", "fraunhofer")
+            sequences = params.pop("sequences", None)
+            fasta = params.pop("fasta", None)
+            query_seq = params.pop("query_seq", None)
+            query_id = params.pop("query_id", "query")
+            return _mode_batch_compare(mapping, diffraction, sequences=sequences,
+                                        fasta=fasta, query_seq=query_seq,
+                                        query_id=query_id, **params)
+
         if mode == "validate_energy_conservation":
             mapping = params.get("mapping", "folded_2d")
             output_size = int(params.get("output_size", 64))
@@ -428,8 +635,9 @@ def compute_optical_sequence_id(mode: str = "generate", **params) -> dict:
         return {
             "error": (
                 f"mode '{mode}' no reconocido. Modos validos: "
-                "generate, compare, validate_energy_conservation, "
-                "validate_translation_invariance, validate_all"
+                "generate, compare, batch_generate, batch_compare, "
+                "validate_energy_conservation, validate_translation_invariance, "
+                "validate_all"
             )
         }
     except Exception as exc:
