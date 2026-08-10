@@ -356,6 +356,7 @@ from mcdm_tool import compute_mcdm
 from octave_syntax_tool import compute_octave_syntax
 from llm_math_bridge_tool import compute_llm_math_bridge
 from polarization_mapping_tool import compute_polarization_mapping
+from optical_sequence_id_tool import compute_optical_sequence_id
 
 
 @mcp.tool()
@@ -954,3 +955,9 @@ def llm_math_bridge_tool(mode: str = "auto", params: dict = None) -> dict:
 def polarization_mapping_tool(mode: str = "map_sequence", params: dict = None) -> dict:
     """Mapea secuencias de ADN a vectores de Stokes [S0,S1,S2,S3], generalizando spin_complex (S1=purina/pirimidina, S2=puente H) y agregando S3 (marco de lectura, posicion mod 3). Primer paso del pipeline hacia optical_sequence_id. mode='map_sequence': mapea una secuencia (params: seq). mode='validate_purine_pyrimidine'/'validate_hydrogen_bond'/'validate_periodicity'(params: repeats opcional, default 30)/'validate_all': corren los controles sinteticos de validacion. Devuelve dict serializable; errores como {"error": ...} sin excepcion."""
     return compute_polarization_mapping(mode, **(params or {}))
+
+
+@mcp.tool()
+def optical_sequence_id_tool(mode: str = "generate", params: dict = None) -> dict:
+    """Simula difraccion de un haz coherente sobre una mascara de fase 2D derivada de polarization_mapping, para generar un identificador optico de una secuencia de ADN. mode='generate': genera el id (params: seq, mapping='slit_1d'|'folded_2d'|'codon_blocks' default slit_1d, diffraction='fraunhofer'|'fresnel' default fraunhofer, output_size default 128, wavelength/distance/dx solo para fresnel, hash_precision, top_k_peaks, include_pattern). mode='compare': compara dos secuencias (params: seq_a, seq_b, + mismos params fisicos) devolviendo pattern_correlation (correlacion pixel a pixel, discrimina bien) y ambos hashes. mode='validate_energy_conservation'/'validate_translation_invariance'/'validate_all': controles sinteticos de la implementacion de difraccion. Devuelve dict serializable; errores como {"error": ...} sin excepcion."""
+    return compute_optical_sequence_id(mode, **(params or {}))
