@@ -29,7 +29,7 @@ NEW_DOC = (
 # Localiza la funcion wrapper completa (decorador + def + docstring) sin asumir
 # el texto exacto de la docstring vieja.
 pattern = re.compile(
-    r'(@mcp\.tool\(\)\s*\ndef stochastic_processes_tool\([^)]*\)\s*->\s*dict:\s*\n\s*""")'
+    r'(@mcp\.tool\(\)\s*\ndef stochastic_processes\([^)]*\)\s*->\s*dict:\s*\n\s*""")'
     r'(.*?)'
     r'(""")',
     re.DOTALL,
@@ -37,7 +37,7 @@ pattern = re.compile(
 
 match = pattern.search(src)
 if match is None:
-    print("AVISO: no se encontro la funcion 'stochastic_processes_tool' en server.py con el patron esperado.")
+    print("AVISO: no se encontro la funcion 'stochastic_processes' en server.py con el patron esperado.")
     print("No se modifico nada. Revisa manualmente el wrapper en server.py.")
 else:
     old_doc_body = match.group(2)

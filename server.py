@@ -780,7 +780,7 @@ def econometrics(mode: str, params: dict = None) -> dict:
 
 @mcp.tool()
 def stochastic_processes(mode: str, params: dict = None) -> dict:
-    """Procesos estocasticos: movimiento browniano, proceso de Ornstein-Uhlenbeck, cadenas de Markov."""
+    """Procesos estocasticos: movimiento browniano (estandar/con drift/geometrico), proceso de Ornstein-Uhlenbeck (reversion a la media, util para variables ambientales con equilibrio), cadenas de Markov discretas (distribucion estacionaria, tiempo de primer paso), y mcmc (Metropolis-Hastings generico: target gaussiano o custom via expresion sympy, devuelve media/covarianza posterior, acceptance rate y effective sample size)."""
     return compute_stochastic_processes(mode, **(params or {}))
 
 @mcp.tool()
